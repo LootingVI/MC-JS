@@ -1,0 +1,26 @@
+name: MC-JS
+version: '2.0.0'
+main: de.flori.mCJS.MCJS
+api-version: '1.21'
+author: Flori
+load: STARTUP
+description: Modern JavaScript plugin system for Minecraft using GraalVM
+website: https://github.com/flori/mc-js
+commands:
+  jsreload:
+    description: Reload JS plugins (all or specific)
+    usage: /<command> [plugin]
+    permission: mcjs.admin
+    aliases: [jsr]
+  jslist:
+    description: List all loaded JS plugins
+    usage: /<command>
+    permission: mcjs.admin
+    aliases: [jsl]
+permissions:
+  mcjs.admin:
+    description: Allows managing JS plugins
+    default: op
+  mcjs.use:
+    description: Allows using JS plugin features
+    default: true

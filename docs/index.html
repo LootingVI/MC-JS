@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MC-JS - Complete Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --dark-light: #334155;
+            --light: #f8fafc;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: #475569;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 2px solid var(--primary);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        nav .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            transition: color 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .badges {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .badge {
+            padding: 0.5rem 1rem;
+            background: var(--dark-light);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border: 1px solid var(--border);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Sidebar */
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .sidebar h3 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s;
+            display: block;
+            padding: 0.3rem 0;
+        }
+
+        .sidebar a:hover {
+            color: var(--primary);
+        }
+
+        /* Main Content */
+        .main-content {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        section {
+            margin-bottom: 3rem;
+            scroll-margin-top: 100px;
+        }
+
+        section h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 0.5rem;
+        }
+
+        section h3 {
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem 0;
+            color: var(--secondary);
+        }
+
+        section h4 {
+            font-size: 1.2rem;
+            margin: 1rem 0 0.5rem 0;
+            color: var(--text);
+        }
+
+        /* Code Blocks */
+        pre {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        pre code {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .code-block {
+            position: relative;
+        }
+
+        .code-title {
+            background: var(--dark-light);
+            padding: 0.5rem 1rem;
+            border-radius: 8px 8px 0 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h4 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background: var(--dark-light);
+            padding: 1rem;
+            text-align: left;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        td {
+            padding: 0.8rem 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+            color: #93c5fd;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warning);
+            color: #fcd34d;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
+            color: #6ee7b7;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(99, 102, 241, 0.2);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <div class="logo">🚀 MC-JS</div>
+            <ul class="nav-links">
+                <li><a href="#getting-started">Getting Started</a></li>
+                <li><a href="#api-reference">API Reference</a></li>
+                <li><a href="#complete-api">Complete API</a></li>
+                <li><a href="#examples">Examples</a></li>
+                <li><a href="#advanced">Advanced</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <h1>MC-JS Documentation</h1>
+        <p>Write Minecraft Plugins in JavaScript - Complete Guide</p>
+        <div class="badges">
+            <span class="badge">📝 JavaScript ES6+</span>
+            <span class="badge">⚡ Hot Reload</span>
+            <span class="badge">🔧 Full API Access</span>
+            <span class="badge">🎮 Minecraft 1.20+</span>
+        </div>
+        <a href="#getting-started" class="btn">Get Started</a>
+        <a href="#api-reference" class="btn">API Reference</a>
+    </div>
+
+    <div class="container">
+        <div class="content-wrapper">
+            <aside class="sidebar">
+                <h3>📚 Navigation</h3>
+                <ul>
+                    <li><a href="#getting-started">Getting Started</a></li>
+                    <li><a href="#installation">Installation</a></li>
+                    <li><a href="#first-plugin">First Plugin</a></li>
+                    <li><a href="#api-reference">API Reference</a></li>
+                    <li><a href="#commands">Commands</a></li>
+                    <li><a href="#events">Events</a></li>
+                    <li><a href="#scheduler">Scheduler</a></li>
+                    <li><a href="#players">Players</a></li>
+                    <li><a href="#inventory">Inventory</a></li>
+                    <li><a href="#database">Database</a></li>
+                    <li><a href="#world-blocks">World & Blocks</a></li>
+                    <li><a href="#entities">Entities</a></li>
+                    <li><a href="#files">Files</a></li>
+                    <li><a href="#cooldowns">Cooldowns</a></li>
+                    <li><a href="#bossbar">BossBar</a></li>
+                    <li><a href="#complete-api">Complete API</a></li>
+                    <li><a href="#examples">Examples</a></li>
+                    <li><a href="#advanced">Advanced</a></li>
+                </ul>
+            </aside>
+
+            <main class="main-content">
+                <!-- Getting Started -->
+                <section id="getting-started">
+                    <h2>🚀 Getting Started</h2>
+                    
+                    <div id="installation">
+                        <h3>Installation</h3>
+                        <div class="card">
+                            <h4>Requirements</h4>
+                            <ul>
+                                <li>Minecraft Server: Paper/Spigot 1.20+</li>
+                                <li>Java: Version 21 or higher</li>
+                                <li>Minecraft Version: 1.20+</li>
+                            </ul>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <strong>📦 Steps:</strong>
+                            <ol style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                                <li>Download the latest release</li>
+                                <li>Place the JAR file in your server's <code>plugins/</code> folder</li>
+                                <li>Start or restart your server</li>
+                                <li>Create JS plugins in <code>plugins/MC-JS/js-plugins/</code></li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div id="first-plugin">
+                        <h3>Your First Plugin</h3>
+                        <p>Create a new file in <code>plugins/MC-JS/js-plugins/</code> with a <code>.js</code> extension:</p>
+                        
+                        <div class="code-block">
+                            <div class="code-title">my-first-plugin.js</div>
+                            <pre><code class="language-javascript">// Plugin metadata (optional but recommended)
+var pluginInfo = {
+    name: "My First Plugin",
+    version: "1.0.0",
+    author: "YourName",
+    description: "My awesome first plugin!"
+};
+
+function onEnable() {
+    logger.info("My plugin is enabled!");
+    
+    // Register a simple command
+    api.registerCommand("hello", "Say hello", "/hello", function(sender, args) {
+        api.sendMessage(sender, "&aHello from JavaScript!");
+        return true;
+    });
+    
+    // Register a player join event
+    api.registerEvent("player.PlayerJoinEvent", function(event) {
+        var player = event.getPlayer();
+        api.sendMessage(player, "&6Welcome to the server!");
+    });
+}
+
+function onDisable() {
+    logger.info("My plugin is disabled!");
+}
+
+// Export functions and metadata
+this.onEnable = onEnable;
+this.onDisable = onDisable;
+this.pluginInfo = pluginInfo;</code></pre>
+                        </div>
+
+                        <div class="alert alert-success">
+                            <strong>✅ Done!</strong> Reload the plugin using <code>/jsreload</code> or restart the server, then test with <code>/hello</code>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- API Reference -->
+                <section id="api-reference">
+                    <h2>📚 Complete API Reference</h2>
+
+                    <div class="alert alert-info">
+                        <strong>💡 Global Objects:</strong> These objects are available in all JavaScript plugins:
+                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                            <li><code>api</code> - Complete JS API wrapper</li>
+                            <li><code>server</code> - Minecraft server instance</li>
+                            <li><code>plugin</code> - Main plugin instance</li>
+                            <li><code>logger</code> - Plugin logger (logger.info(), logger.warning(), etc.)</li>
+                            <li><code>scheduler</code> - Server scheduler</li>
+                            <li><code>Bukkit</code> - Bukkit API access</li>
+                        </ul>
+                    </div>
+
+                    <!-- Commands -->
+                    <div id="commands">
+                        <h3>💬 Command Registration</h3>
+                        
+                        <div class="card">
+                            <h4>Simple Command</h4>
+                            <pre><code class="language-javascript">api.registerCommand("command", function(sender, args) {
+    api.sendMessage(sender, "Command executed!");
+    return true; // Return true for success, false for failure
+});</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Command with Description and Usage</h4>
+                            <pre><code class="language-javascript">api.registerCommand("command", "Description", "/command [args]", 
+    function(sender, args) {
+        if (args.length > 0) {
+            api.sendMessage(sender, "You said: " + args[0]);
+        } else {
+            api.sendMessage(sender, "&cUsage: /command &lt;message&gt;");
+        }
+        return true;
+    }
+);</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Command with Tab Completion</h4>
+                            <pre><code class="language-javascript">api.registerCommand("command", "Description", "/command [player]", 
+    function(sender, args) {
+        // Command executor
+        var target = api.getPlayer(args[0]);
+        if (target) {
+            api.sendMessage(sender, "Found player: " + target.getName());
+        }
+        return true;
+    },
+    function(sender, args) {
+        // Tab completer - return array of strings
+        if (args.length === 1) {
+            return api.getPlayerNames(); // Return all online player names
+        }
+        return [];
+    }
+);</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Events -->
+                    <div id="events">
+                        <h3>🎮 Event Registration</h3>
+                        
+                        <div class="card">
+                            <h4>Basic Event</h4>
+                            <pre><code class="language-javascript">api.registerEvent("player.PlayerJoinEvent", function(event) {
+    var player = event.getPlayer();
+    api.sendMessage(player, "&aWelcome to the server!");
+});</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Event with Priority</h4>
+                            <pre><code class="language-javascript">api.registerEvent("block.BlockBreakEvent", function(event) {
+    var player = event.getPlayer();
+    var block = event.getBlock();
+    
+    // Cancel the event
+    event.setCancelled(true);
+    
+    api.sendMessage(player, "&cYou cannot break blocks here!");
+}, "HIGH"); // Priorities: LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Available Event Packages</h4>
+                            <table>
+                                <tr>
+                                    <th>Package</th>
+                                    <th>Examples</th>
+                                </tr>
+                                <tr>
+                                    <td><code>player.*</code></td>
+                                    <td>PlayerJoinEvent, PlayerQuitEvent, PlayerDeathEvent</td>
+                                </tr>
+                                <tr>
+                                    <td><code>block.*</code></td>
+                                    <td>BlockBreakEvent, BlockPlaceEvent, BlockClickEvent</td>
+                                </tr>
+                                <tr>
+                                    <td><code>entity.*</code></td>
+                                    <td>EntityDamageEvent, EntitySpawnEvent</td>
+                                </tr>
+                                <tr>
+                                    <td><code>inventory.*</code></td>
+                                    <td>InventoryClickEvent, InventoryCloseEvent</td>
+                                </tr>
+                                <tr>
+                                    <td><code>server.*</code></td>
+                                    <td>ServerLoadEvent, PluginEnableEvent</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Scheduler -->
+                    <div id="scheduler">
+                        <h3>⏰ Task Scheduling</h3>
+                        
+                        <div class="card">
+                            <h4>Delayed Task</h4>
+                            <pre><code class="language-javascript">// Run after 5 seconds (100 ticks = 5 seconds, 20 ticks = 1 second)
+api.runTaskLater(100, function() {
+    logger.info("This runs after 5 seconds");
+    api.broadcast("&a5 seconds have passed!");
+});</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Repeating Task</h4>
+                            <pre><code class="language-javascript">// Run every minute (1200 ticks = 60 seconds)
+var task = api.runTaskTimer(0, 1200, function() {
+    var playerCount = api.getOnlinePlayers().size();
+    logger.info("Server has " + playerCount + " player(s) online");
+});
+
+// Cancel the task later
+api.runTaskLater(6000, function() {
+    api.cancelTask(task);
+    logger.info("Task cancelled after 5 minutes");
+});</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Async Task</h4>
+                            <pre><code class="language-javascript">// Run in a separate thread (for non-blocking operations)
+api.runTaskAsync(function() {
+    // This won't block the main server thread
+    var response = api.httpGet("https://api.example.com/data");
+    logger.info("Fetched data: " + response);
+    
+    // Update something on the main thread
+    api.runTask(function() {
+        api.broadcast("&aData fetched successfully!");
+    });
+});</code></pre>
+                        </div>
+
+                        <table>
+                            <tr>
+                                <th>Method</th>
+                                <th>Description</th>
+                            </tr>
+                            <tr>
+                                <td><code>api.runTask(task)</code></td>
+                                <td>Run task on next tick</td>
+                            </tr>
+                            <tr>
+                                <td><code>api.runTaskLater(delay, task)</code></td>
+                                <td>Run task after delay (in ticks)</td>
+                            </tr>
+                            <tr>
+                                <td><code>api.runTaskTimer(delay, period, task)</code></td>
+                                <td>Run repeating task</td>
+                            </tr>
+                            <tr>
+                                <td><code>api.runTaskAsync(task)</code></td>
+                                <td>Run task asynchronously</td>
+                            </tr>
+                            <tr>
+                                <td><code>api.runTaskLaterAsync(delay, task)</code></td>
+                                <td>Run delayed async task</td>
+                            </tr>
+                            <tr>
+                                <td><code>api.cancelTask(task)</code></td>
+                                <td>Cancel a running task</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Players -->
+                    <div id="players">
+                        <h3>👤 Player Management</h3>
+                        
+                        <div class="card">
+                            <h4>Get Players</h4>
+                            <pre><code class="language-javascript">// Get player by name
+var player = api.getPlayer("PlayerName");
+if (player) {
+    api.sendMessage(player, "Hello!");
+}
+
+// Get exact player name (case-sensitive)
+var exactPlayer = api.getPlayerExact("ExactPlayerName");
+
+// Get all online players
+var allPlayers = api.getOnlinePlayers();
+for (var i = 0; i < allPlayers.length; i++) {
+    var p = allPlayers[i];
+    logger.info("Online: " + p.getName());
+}</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Send Messages</h4>
+                            <pre><code class="language-javascript">// Send message to player
+api.sendMessage(player, "&aHello &bWorld!");
+
+// Broadcast to all players
+api.broadcast("&6Server announcement!");
+
+// Broadcast with permission
+api.broadcast("&cAdmin message!", "admin.message");
+
+// Send title
+api.sendTitle(player, "&aWelcome!", "&eEnjoy your stay!", 10, 70, 20);
+
+// Send action bar
+api.sendActionBar(player, "&bYou are in the spawn area!");</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Player Properties</h4>
+                            <pre><code class="language-javascript">// Health
+api.setHealth(player, 20.0);
+var health = api.getHealth(player);
+var maxHealth = api.getMaxHealth(player);
+
+// Food
+api.setFoodLevel(player, 20);
+var food = api.getFoodLevel(player);
+api.setSaturation(player, 5.0);
+
+// Game Mode
+api.setGameMode(player, GameMode.CREATIVE);
+var gamemode = api.getGameMode(player);
+
+// Teleportation
+var location = api.createLocation(world, 100, 64, 200);
+api.teleport(player, location);
+
+// Experience
+api.setLevel(player, 10);
+api.setExp(player, 0.5);
+api.giveExp(player, 100);</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Inventory -->
+                    <div id="inventory">
+                        <h3>📦 Inventory & Items</h3>
+                        
+                        <div class="card">
+                            <h4>Create Inventory</h4>
+                            <pre><code class="language-javascript">// Create custom inventory (27 = 3 rows)
+var inv = api.createInventory(null, 27, "&6My Custom GUI");
+
+// Create inventory by type
+var chest = api.createInventory(null, InventoryType.CHEST, "&bChest Menu");</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Create Items</h4>
+                            <pre><code class="language-javascript">// Create item stack
+var diamond = api.createItemStack(api.getMaterial("DIAMOND"), 1);
+
+// Set display name
+diamond = api.setItemDisplayName(diamond, "&b&lSpecial Diamond");
+
+// Set lore
+diamond = api.setItemLore(diamond, [
+    "&7This is a special diamond",
+    "&7given by the JS plugin!",
+    "&eRight-click to use"
+]);
+
+// Give item to player
+api.giveItem(player, diamond);
+
+// Set item in inventory slot
+api.setInventoryItem(inv, 0, diamond);
+
+// Fill entire inventory
+api.fillInventory(inv, diamond);
+
+// Fill range
+api.fillInventoryRange(inv, diamond, 0, 8);</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Inventory Events</h4>
+                            <pre><code class="language-javascript">// Register click handler
+api.registerInventoryClick(inv, function(event) {
+    event.setCancelled(true); // Prevent item movement
+    
+    var slot = event.getSlot();
+    var player = event.getWhoClicked();
+    
+    api.sendMessage(player, "&aYou clicked slot " + slot);
+    
+    if (slot === 10) {
+        // Do something when slot 10 is clicked
+        api.giveItem(player, api.createItemStack(api.getMaterial("DIAMOND"), 5));
+    }
+});
+
+// Register close handler
+api.registerInventoryClose(inv, function(event) {
+    var player = event.getPlayer();
+    api.sendMessage(player, "&7You closed the inventory");
+});</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Database -->
+                    <div id="database">
+                        <h3>🗄️ Database Operations</h3>
+                        
+                        <div class="card">
+                            <h4>Create Table</h4>
+                            <pre><code class="language-javascript">api.createTable("mydb", "players", {
+    "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+    "name": "TEXT NOT NULL",
+    "level": "INTEGER DEFAULT 1",
+    "coins": "INTEGER DEFAULT 0",
+    "last_seen": "INTEGER"
+});</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Insert Data</h4>
+                            <pre><code class="language-javascript">api.insertData("mydb", "players", {
+    "name": "PlayerName",
+    "level": 10,
+    "coins": 1000,
+    "last_seen": api.getCurrentTimeMillis()
+});</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Update Data</h4>
+                            <pre><code class="language-javascript">api.updateData("mydb", "players", 
+    { "level": 20, "coins": 2000 },
+    "name = 'PlayerName'"
+);</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Query Data</h4>
+                            <pre><code class="language-javascript">var results = api.querySQL("mydb", 
+    "SELECT * FROM players WHERE level > 5"
+);
+
+for (var i = 0; i < results.length; i++) {
+    var row = results[i];
+    logger.info("Player: " + row.name + ", Level: " + row.level);
+}</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Delete Data</h4>
+                            <pre><code class="language-javascript">// Delete specific rows
+api.deleteData("mydb", "players", "last_seen < " + (api.getCurrentTimeMillis() - 86400000));
+
+// Count rows
+var count = api.countRows("mydb", "players");
+var activeCount = api.countRows("mydb", "players", "last_seen > " + (api.getCurrentTimeMillis() - 86400000));</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- World & Blocks -->
+                    <div id="world-blocks">
+                        <h3>🌍 World & Block Management</h3>
+                        
+                        <div class="card">
+                            <h4>World Operations</h4>
+                            <pre><code class="language-javascript">// Get worlds
+var world = api.getWorld("world");
+var allWorlds = api.getWorlds();
+
+// Time control
+api.setWorldTime(world, 6000); // Set to noon
+var time = api.getWorldTime(world);
+
+// Weather control
+api.setStorm(world, true);
+api.setThundering(world, true);
+var hasStorm = api.hasStorm(world);
+var isThundering = api.isThundering(world);
+
+// World border
+var border = api.getWorldBorder(world);
+api.setWorldBorderSize(world, 1000);
+api.setWorldBorderCenter(world, 0, 0);</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Block Operations</h4>
+                            <pre><code class="language-javascript">// Get block
+var block = api.getBlock(location);
+var blockType = api.getBlockType(location);
+
+// Set block
+api.setBlockType(location, api.getMaterial("DIAMOND_BLOCK"));
+
+// Break block
+api.breakBlock(location);
+api.breakBlock(location, false); // Don't drop items
+
+// Get block at coordinates
+var block = api.getBlockAt(world, 100, 64, 200);
+
+// Get blocks in radius
+var blocks = api.getBlocksInRadius(centerLocation, 5.0);
+for (var i = 0; i < blocks.length; i++) {
+    logger.info("Block: " + blocks[i].getType().name());
+}</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Explosions & Lightning</h4>
+                            <pre><code class="language-javascript">// Create explosion
+api.createExplosion(location, 5.0); // Power 5
+api.createExplosion(location, 5.0, true); // With fire
+
+// Strike lightning
+api.strikeLightning(location);
+api.strikeLightningEffect(location); // Visual only, no damage</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Entities -->
+                    <div id="entities">
+                        <h3>🎯 Entity Management</h3>
+                        
+                        <div class="card">
+                            <h4>Spawn Entities</h4>
+                            <pre><code class="language-javascript">// Spawn entity (string or enum)
+var zombie = api.spawnEntity(location, "ZOMBIE");
+var creeper = api.spawnEntity(location, EntityType.CREEPER);
+
+// Entity properties
+api.setEntityCustomName(zombie, "&cCustom Zombie");
+api.setEntityGlowing(zombie, true);
+api.setEntityGravity(zombie, false);
+api.setEntityInvulnerable(zombie, true);
+
+// Remove entity
+api.removeEntity(zombie);</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Files -->
+                    <div id="files">
+                        <h3>📁 File Operations</h3>
+                        
+                        <div class="card">
+                            <h4>YAML Files</h4>
+                            <pre><code class="language-javascript">// Save YAML
+var data = {
+    "server": {
+        "name": "My Server",
+        "maxPlayers": 100
+    },
+    "settings": {
+        "pvp": true,
+        "spawnProtection": true
+    }
+};
+api.saveYamlFile("config", data);
+
+// Load YAML
+var config = api.loadYamlFile("config");
+var serverName = config.server.name;</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>JSON Files</h4>
+                            <pre><code class="language-javascript">// Save JSON
+var jsonData = {
+    "players": ["Player1", "Player2"],
+    "timestamp": api.getCurrentTimeMillis()
+};
+api.saveJsonFile("data", JSON.stringify(jsonData, null, 2));
+
+// Load JSON
+var json = api.loadJsonFile("data");
+var data = JSON.parse(json);</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Text Files</h4>
+                            <pre><code class="language-javascript">// Save text
+api.saveTextFile("log", "Line 1\nLine 2\nLine 3");
+
+// Load text
+var content = api.loadTextFile("log");
+logger.info("File content: " + content);</code></pre>
+                        </div>
+
+                        <div class="card">
+                            <h4>Config System</h4>
+                            <pre><code class="language-javascript">// Get plugin config
+var config = api.getPluginConfig("myplugin");
+
+// Get config value with default
+var setting = api.getPluginConfigValue("myplugin", "setting", "default");
+
+// Set config value
+api.setPluginConfigValue("myplugin", "setting", "new value");
+
+// Save entire config
+api.savePluginConfig("myplugin", {
+    "setting1": "value1",
+    "setting2": "value2"
+});</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Cooldowns -->
+                    <div id="cooldowns">
+                        <h3>⏱️ Cooldown System</h3>
+                        
+                        <div class="card">
+                            <h4>Basic Cooldown</h4>
+                            <pre><code class="language-javascript">// Check cooldown
+if (!api.hasCooldown(player.getName(), "command")) {
+    // Execute command
+    api.setCooldown(player.getName(), "command", 5000); // 5 seconds
+} else {
+    var remaining = api.getCooldownRemaining(player.getName(), "command");
+    api.sendMessage(player, "&cCooldown: " + Math.ceil(remaining / 1000) + " seconds");
+}
+
+// Remove cooldown
+api.removeCooldown(player.getName(), "command");
+
+// Clear all cooldowns for player
+api.clearCooldowns(player.getName());</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- BossBar -->
+                    <div id="bossbar">
+                        <h3>🎨 BossBar</h3>
+                        
+                        <div class="card">
+                            <h4>Create and Manage BossBar</h4>
+                            <pre><code class="language-javascript">// Create boss bar (with enum or string)
+var bossBar = api.createBossBar("&cBoss Fight!", "RED", "SOLID");
+// Or: api.createBossBar("&cBoss Fight!", BarColor.RED, BarStyle.SOLID);
+
+// Add players
+bossBar.addPlayer(player);
+bossBar.addAll(api.getOnlinePlayers());
+
+// Update progress (0.0 to 1.0)
+bossBar.setProgress(0.5); // 50%
+
+// Update title
+bossBar.setTitle("&6New Title");
+
+// Remove players
+bossBar.removePlayer(player);
+bossBar.removeAll();
+
+// Available colors: BLUE, GREEN, PINK, PURPLE, RED, WHITE, YELLOW
+// Available styles: SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Examples -->
+                <section id="examples">
+                    <h2>💡 Complete Examples</h2>
+
+                    <div class="card">
+                        <h3>Example 1: Welcome Plugin</h3>
+                        <pre><code class="language-javascript">var pluginInfo = {
+    name: "Welcome Plugin",
+    version: "1.0.0",
+    author: "YourName"
+};
+
+function onEnable() {
+    api.registerEvent("player.PlayerJoinEvent", function(event) {
+        var player = event.getPlayer();
+        
+        // Welcome message
+        api.sendMessage(player, "&6Welcome to the server, &b" + player.getName() + "&6!");
+        
+        // Title
+        api.sendTitle(player, "&aWelcome!", "&eEnjoy your stay!", 10, 70, 20);
+        
+        // Sound
+        api.playSound(player, "ENTITY_PLAYER_LEVELUP", 1.0, 1.0);
+        
+        // Give welcome kit after 1 second
+        api.runTaskLater(20, function() {
+            var bread = api.createItemStack(api.getMaterial("BREAD"), 5);
+            var sword = api.createItemStack(api.getMaterial("WOODEN_SWORD"), 1);
+            api.giveItem(player, bread);
+            api.giveItem(player, sword);
+            api.sendMessage(player, "&aYou received a welcome kit!");
+        });
+    });
+}
+
+this.onEnable = onEnable;
+this.pluginInfo = pluginInfo;</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Example 2: Stats Plugin with Database</h3>
+                        <pre><code class="language-javascript">var pluginInfo = {
+    name: "Stats Plugin",
+    version: "1.0.0"
+};
+
+function onEnable() {
+    // Create database
+    api.createTable("stats", "player_stats", {
+        "player_name": "TEXT PRIMARY KEY",
+        "kills": "INTEGER DEFAULT 0",
+        "deaths": "INTEGER DEFAULT 0",
+        "playtime": "INTEGER DEFAULT 0"
+    });
+    
+    // Stats command
+    api.registerCommand("stats", "View your stats", "/stats [player]", 
+        function(sender, args) {
+            var targetName = args.length > 0 ? args[0] : sender.getName();
+            
+            var results = api.querySQL("stats", 
+                "SELECT * FROM player_stats WHERE player_name = '" + targetName + "'");
+            
+            if (results.length > 0) {
+                var stats = results[0];
+                api.sendMessage(sender, "&6=== Stats for " + targetName + " ===");
+                api.sendMessage(sender, "&eKills: &a" + stats.kills);
+                api.sendMessage(sender, "&eDeaths: &c" + stats.deaths);
+                api.sendMessage(sender, "&ePlaytime: &b" + Math.floor(stats.playtime / 3600) + " hours");
+            } else {
+                api.sendMessage(sender, "&cNo stats found for " + targetName);
+            }
+            
+            return true;
+        },
+        function(sender, args) {
+            return api.getPlayerNames();
+        }
+    );
+    
+    // Track player deaths
+    api.registerEvent("entity.PlayerDeathEvent", function(event) {
+        var killer = event.getEntity().getKiller();
+        var victim = event.getEntity();
+        
+        if (killer) {
+            // Update killer stats
+            var killerStats = api.querySQL("stats", 
+                "SELECT kills FROM player_stats WHERE player_name = '" + killer.getName() + "'");
+            
+            if (killerStats.length > 0) {
+                api.updateData("stats", "player_stats", 
+                    { "kills": killerStats[0].kills + 1 },
+                    "player_name = '" + killer.getName() + "'");
+            } else {
+                api.insertData("stats", "player_stats", {
+                    "player_name": killer.getName(),
+                    "kills": 1,
+                    "deaths": 0
+                });
+            }
+        }
+        
+        // Update victim stats
+        var victimStats = api.querySQL("stats",
+            "SELECT deaths FROM player_stats WHERE player_name = '" + victim.getName() + "'");
+        
+        if (victimStats.length > 0) {
+            api.updateData("stats", "player_stats",
+                { "deaths": victimStats[0].deaths + 1 },
+                "player_name = '" + victim.getName() + "'");
+        } else {
+            api.insertData("stats", "player_stats", {
+                "player_name": victim.getName(),
+                "kills": 0,
+                "deaths": 1
+            });
+        }
+    });
+}
+
+this.onEnable = onEnable;
+this.pluginInfo = pluginInfo;</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Example 3: Custom GUI Menu</h3>
+                        <pre><code class="language-javascript">var pluginInfo = {
+    name: "Menu Plugin",
+    version: "1.0.0"
+};
+
+function onEnable() {
+    api.registerCommand("menu", "Open custom menu", "/menu", function(sender, args) {
+        if (!(sender instanceof Player)) {
+            api.sendMessage(sender, "&cOnly players can use this command!");
+            return false;
+        }
+        
+        var player = sender;
+        var inv = api.createInventory(null, 27, "&6Custom Menu");
+        
+        // Option 1
+        var item1 = api.createItemStack(api.getMaterial("DIAMOND"), 1);
+        item1 = api.setItemDisplayName(item1, "&bOption 1");
+        item1 = api.setItemLore(item1, ["&7Click to get diamonds!"]);
+        api.setInventoryItem(inv, 10, item1);
+        
+        // Option 2
+        var item2 = api.createItemStack(api.getMaterial("EMERALD"), 1);
+        item2 = api.setItemDisplayName(item2, "&aOption 2");
+        item2 = api.setItemLore(item2, ["&7Click to get emeralds!"]);
+        api.setInventoryItem(inv, 16, item2);
+        
+        // Close button
+        var close = api.createItemStack(api.getMaterial("BARRIER"), 1);
+        close = api.setItemDisplayName(close, "&cClose Menu");
+        api.setInventoryItem(inv, 22, close);
+        
+        // Register click handler
+        api.registerInventoryClick(inv, function(event) {
+            event.setCancelled(true);
+            var slot = event.getSlot();
+            
+            if (slot === 10) {
+                api.sendMessage(player, "&aYou clicked Option 1!");
+                api.giveItem(player, api.createItemStack(api.getMaterial("DIAMOND"), 5));
+            } else if (slot === 16) {
+                api.sendMessage(player, "&aYou clicked Option 2!");
+                api.giveItem(player, api.createItemStack(api.getMaterial("EMERALD"), 5));
+            } else if (slot === 22) {
+                player.closeInventory();
+            }
+        });
+        
+        player.openInventory(inv);
+        return true;
+    });
+}
+
+this.onEnable = onEnable;
+this.pluginInfo = pluginInfo;</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Example 4: Advanced Cooldown System</h3>
+                        <pre><code class="language-javascript">var pluginInfo = {
+    name: "Cooldown Example",
+    version: "1.0.0"
+};
+
+function onEnable() {
+    api.registerCommand("heal", "Heal yourself", "/heal", function(sender, args) {
+        if (!(sender instanceof Player)) {
+            api.sendMessage(sender, "&cOnly players can use this!");
+            return false;
+        }
+        
+        var player = sender;
+        var cooldownKey = "heal";
+        
+        if (api.hasCooldown(player.getName(), cooldownKey)) {
+            var remaining = api.getCooldownRemaining(player.getName(), cooldownKey);
+            api.sendMessage(player, "&cCooldown: " + Math.ceil(remaining / 1000) + " seconds");
+            return false;
+        }
+        
+        // Heal player
+        api.setHealth(player, api.getMaxHealth(player));
+        api.setFoodLevel(player, 20);
+        api.sendMessage(player, "&aYou have been healed!");
+        
+        // Set 30 second cooldown
+        api.setCooldown(player.getName(), cooldownKey, 30000);
+        
+        return true;
+    });
+}
+
+this.onEnable = onEnable;
+this.pluginInfo = pluginInfo;</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Example 5: BossBar Progress Bar</h3>
+                        <pre><code class="language-javascript">var pluginInfo = {
+    name: "BossBar Example",
+    version: "1.0.0"
+};
+
+var bossBars = {};
+
+function onEnable() {
+    api.registerEvent("player.PlayerJoinEvent", function(event) {
+        var player = event.getPlayer();
+        
+        // Create boss bar
+        var bossBar = api.createBossBar("&aLoading...", "GREEN", "SOLID");
+        bossBar.addPlayer(player);
+        bossBars[player.getName()] = bossBar;
+        
+        // Animate progress
+        var progress = 0;
+        var task = api.runTaskTimer(0, 5, function() {
+            if (!bossBars[player.getName()]) {
+                api.cancelTask(task);
+                return;
+            }
+            
+            progress += 0.02;
+            if (progress > 1) {
+                progress = 1;
+                bossBar.setTitle("&aWelcome!");
+                api.cancelTask(task);
+                
+                // Remove after 3 seconds
+                api.runTaskLater(60, function() {
+                    bossBar.removeAll();
+                    delete bossBars[player.getName()];
+                });
+            } else {
+                bossBar.setProgress(progress);
+                bossBar.setTitle("&aLoading... " + Math.floor(progress * 100) + "%");
+            }
+        });
+    });
+    
+    api.registerEvent("player.PlayerQuitEvent", function(event) {
+        var player = event.getPlayer();
+        if (bossBars[player.getName()]) {
+            bossBars[player.getName()].removeAll();
+            delete bossBars[player.getName()];
+        }
+    });
+}
+
+this.onEnable = onEnable;
+this.pluginInfo = pluginInfo;</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Example 6: World Protection System</h3>
+                        <pre><code class="language-javascript">var pluginInfo = {
+    name: "World Protection",
+    version: "1.0.0"
+};
+
+var protectedRegions = [];
+
+function onEnable() {
+    // Define protected region (spawn area)
+    var spawn = api.getWorlds()[0].getSpawnLocation();
+    protectedRegions.push({
+        center: spawn,
+        radius: 50
+    });
+    
+    // Protect blocks
+    api.registerEvent("block.BlockBreakEvent", function(event) {
+        var player = event.getPlayer();
+        var block = event.getBlock();
+        
+        if (isInProtectedRegion(block.getLocation())) {
+            if (!api.hasPermission(player, "protection.bypass")) {
+                event.setCancelled(true);
+                api.sendMessage(player, "&cYou cannot break blocks in the protected area!");
+                api.playSound(player, "ENTITY_VILLAGER_NO", 1.0, 1.0);
+            }
+        }
+    });
+    
+    api.registerEvent("block.BlockPlaceEvent", function(event) {
+        var player = event.getPlayer();
+        var block = event.getBlock();
+        
+        if (isInProtectedRegion(block.getLocation())) {
+            if (!api.hasPermission(player, "protection.bypass")) {
+                event.setCancelled(true);
+                api.sendMessage(player, "&cYou cannot place blocks in the protected area!");
+            }
+        }
+    });
+    
+    // Visual indicator
+    api.registerEvent("player.PlayerMoveEvent", function(event) {
+        var player = event.getPlayer();
+        if (isInProtectedRegion(player.getLocation())) {
+            api.sendActionBar(player, "&c⚠ Protected Area");
+        }
+    });
+}
+
+function isInProtectedRegion(location) {
+    for (var i = 0; i < protectedRegions.length; i++) {
+        var region = protectedRegions[i];
+        var distance = api.getDistance(location, region.center);
+        if (distance <= region.radius) {
+            return true;
+        }
+    }
+    return false;
+}
+
+this.onEnable = onEnable;
+this.pluginInfo = pluginInfo;</code></pre>
+                    </div>
+                </section>
+
+                <!-- Complete API Reference -->
+                <section id="complete-api">
+                    <h2>📋 Complete API Reference</h2>
+                    
+                    <div class="card">
+                        <h3>All Available Methods</h3>
+                        <p>This is a comprehensive list of all API methods available in MC-JS:</p>
+                        
+                        <h4>Command Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.registerCommand(name, executor)</code></td><td>Register simple command</td></tr>
+                            <tr><td><code>api.registerCommand(name, desc, usage, executor)</code></td><td>Register command with description</td></tr>
+                            <tr><td><code>api.registerCommand(name, desc, usage, executor, completer)</code></td><td>Register command with tab completion</td></tr>
+                        </table>
+
+                        <h4>Event Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.registerEvent(eventClassName, handler)</code></td><td>Register event by string name</td></tr>
+                            <tr><td><code>api.registerEvent(eventClass, handler, priority)</code></td><td>Register event with priority</td></tr>
+                            <tr><td><code>api.registerInventoryClick(inv, handler)</code></td><td>Register inventory click handler</td></tr>
+                            <tr><td><code>api.registerInventoryClose(inv, handler)</code></td><td>Register inventory close handler</td></tr>
+                        </table>
+
+                        <h4>Task Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.runTask(task)</code></td><td>Run task on next tick</td></tr>
+                            <tr><td><code>api.runTaskLater(delay, task)</code></td><td>Run task after delay (ticks)</td></tr>
+                            <tr><td><code>api.runTaskTimer(delay, period, task)</code></td><td>Run repeating task</td></tr>
+                            <tr><td><code>api.runTaskAsync(task)</code></td><td>Run async task</td></tr>
+                            <tr><td><code>api.runTaskLaterAsync(delay, task)</code></td><td>Run delayed async task</td></tr>
+                            <tr><td><code>api.cancelTask(task)</code></td><td>Cancel running task</td></tr>
+                        </table>
+
+                        <h4>Player Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.getPlayer(name)</code></td><td>Get player by name</td></tr>
+                            <tr><td><code>api.getPlayerExact(name)</code></td><td>Get player by exact name</td></tr>
+                            <tr><td><code>api.getOnlinePlayers()</code></td><td>Get all online players</td></tr>
+                            <tr><td><code>api.getPlayerNames()</code></td><td>Get list of online player names</td></tr>
+                            <tr><td><code>api.sendMessage(sender, message)</code></td><td>Send message</td></tr>
+                            <tr><td><code>api.sendTitle(player, title, subtitle)</code></td><td>Send title</td></tr>
+                            <tr><td><code>api.sendActionBar(player, message)</code></td><td>Send action bar</td></tr>
+                            <tr><td><code>api.broadcast(message)</code></td><td>Broadcast to all</td></tr>
+                            <tr><td><code>api.broadcast(message, permission)</code></td><td>Broadcast with permission</td></tr>
+                            <tr><td><code>api.setHealth(player, health)</code></td><td>Set player health</td></tr>
+                            <tr><td><code>api.getHealth(player)</code></td><td>Get player health</td></tr>
+                            <tr><td><code>api.getMaxHealth(player)</code></td><td>Get max health</td></tr>
+                            <tr><td><code>api.setFoodLevel(player, level)</code></td><td>Set food level</td></tr>
+                            <tr><td><code>api.setGameMode(player, mode)</code></td><td>Set game mode</td></tr>
+                            <tr><td><code>api.teleport(player, location)</code></td><td>Teleport player</td></tr>
+                            <tr><td><code>api.kickPlayer(player, reason)</code></td><td>Kick player</td></tr>
+                            <tr><td><code>api.banPlayer(name, reason)</code></td><td>Ban player</td></tr>
+                            <tr><td><code>api.unbanPlayer(name)</code></td><td>Unban player</td></tr>
+                            <tr><td><code>api.isBanned(name)</code></td><td>Check if banned</td></tr>
+                        </table>
+
+                        <h4>Inventory & Item Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.createInventory(holder, size, title)</code></td><td>Create inventory</td></tr>
+                            <tr><td><code>api.setInventoryItem(inv, slot, item)</code></td><td>Set item in slot</td></tr>
+                            <tr><td><code>api.getInventoryItem(inv, slot)</code></td><td>Get item from slot</td></tr>
+                            <tr><td><code>api.fillInventory(inv, item)</code></td><td>Fill entire inventory</td></tr>
+                            <tr><td><code>api.fillInventoryRange(inv, item, start, end)</code></td><td>Fill inventory range</td></tr>
+                            <tr><td><code>api.createItemStack(material, amount)</code></td><td>Create item stack</td></tr>
+                            <tr><td><code>api.setItemDisplayName(item, name)</code></td><td>Set item display name</td></tr>
+                            <tr><td><code>api.setItemLore(item, lore)</code></td><td>Set item lore</td></tr>
+                            <tr><td><code>api.giveItem(player, item)</code></td><td>Give item to player</td></tr>
+                            <tr><td><code>api.getItemInMainHand(player)</code></td><td>Get item in main hand</td></tr>
+                            <tr><td><code>api.clearInventory(player)</code></td><td>Clear player inventory</td></tr>
+                        </table>
+
+                        <h4>Database Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.createTable(dbName, tableName, columns)</code></td><td>Create database table</td></tr>
+                            <tr><td><code>api.insertData(dbName, tableName, data)</code></td><td>Insert data</td></tr>
+                            <tr><td><code>api.updateData(dbName, tableName, data, where)</code></td><td>Update data</td></tr>
+                            <tr><td><code>api.deleteData(dbName, tableName, where)</code></td><td>Delete data</td></tr>
+                            <tr><td><code>api.querySQL(dbName, sql)</code></td><td>Query database</td></tr>
+                            <tr><td><code>api.countRows(dbName, tableName)</code></td><td>Count rows</td></tr>
+                            <tr><td><code>api.executeSQL(dbName, sql)</code></td><td>Execute SQL</td></tr>
+                        </table>
+
+                        <h4>File Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.saveYamlFile(fileName, data)</code></td><td>Save YAML file</td></tr>
+                            <tr><td><code>api.loadYamlFile(fileName)</code></td><td>Load YAML file</td></tr>
+                            <tr><td><code>api.saveJsonFile(fileName, content)</code></td><td>Save JSON file</td></tr>
+                            <tr><td><code>api.loadJsonFile(fileName)</code></td><td>Load JSON file</td></tr>
+                            <tr><td><code>api.saveTextFile(fileName, content)</code></td><td>Save text file</td></tr>
+                            <tr><td><code>api.loadTextFile(fileName)</code></td><td>Load text file</td></tr>
+                        </table>
+
+                        <h4>Config Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.getPluginConfig(pluginName)</code></td><td>Get plugin config</td></tr>
+                            <tr><td><code>api.savePluginConfig(pluginName, data)</code></td><td>Save plugin config</td></tr>
+                            <tr><td><code>api.getPluginConfigValue(pluginName, path)</code></td><td>Get config value</td></tr>
+                            <tr><td><code>api.setPluginConfigValue(pluginName, path, value)</code></td><td>Set config value</td></tr>
+                        </table>
+
+                        <h4>Cooldown Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.hasCooldown(playerName, key)</code></td><td>Check cooldown</td></tr>
+                            <tr><td><code>api.setCooldown(playerName, key, duration)</code></td><td>Set cooldown (ms)</td></tr>
+                            <tr><td><code>api.getCooldownRemaining(playerName, key)</code></td><td>Get remaining time</td></tr>
+                            <tr><td><code>api.removeCooldown(playerName, key)</code></td><td>Remove cooldown</td></tr>
+                            <tr><td><code>api.clearCooldowns(playerName)</code></td><td>Clear all cooldowns</td></tr>
+                        </table>
+
+                        <h4>BossBar Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.createBossBar(title, color, style)</code></td><td>Create boss bar</td></tr>
+                            <tr><td><code>api.createBossBar(title, colorName, styleName)</code></td><td>Create boss bar (strings)</td></tr>
+                        </table>
+
+                        <h4>Particle & Sound Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.spawnParticle(loc, particle, count)</code></td><td>Spawn particles</td></tr>
+                            <tr><td><code>api.spawnParticle(loc, particleName, count, ...)</code></td><td>Spawn particles (string)</td></tr>
+                            <tr><td><code>api.playSound(loc, sound, volume, pitch)</code></td><td>Play sound at location</td></tr>
+                            <tr><td><code>api.playSound(player, sound, volume, pitch)</code></td><td>Play sound for player</td></tr>
+                            <tr><td><code>api.playSound(loc, soundName, volume, pitch)</code></td><td>Play sound (string)</td></tr>
+                        </table>
+
+                        <h4>World & Block Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.getWorld(name)</code></td><td>Get world by name</td></tr>
+                            <tr><td><code>api.getWorlds()</code></td><td>Get all worlds</td></tr>
+                            <tr><td><code>api.getWorldNames()</code></td><td>Get world names</td></tr>
+                            <tr><td><code>api.setWorldTime(world, time)</code></td><td>Set world time</td></tr>
+                            <tr><td><code>api.setStorm(world, storm)</code></td><td>Set storm</td></tr>
+                            <tr><td><code>api.setThundering(world, thundering)</code></td><td>Set thundering</td></tr>
+                            <tr><td><code>api.getBlock(location)</code></td><td>Get block</td></tr>
+                            <tr><td><code>api.setBlockType(location, material)</code></td><td>Set block type</td></tr>
+                            <tr><td><code>api.breakBlock(location)</code></td><td>Break block</td></tr>
+                            <tr><td><code>api.getBlocksInRadius(center, radius)</code></td><td>Get blocks in radius</td></tr>
+                            <tr><td><code>api.createExplosion(location, power)</code></td><td>Create explosion</td></tr>
+                            <tr><td><code>api.strikeLightning(location)</code></td><td>Strike lightning</td></tr>
+                        </table>
+
+                        <h4>Entity Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.spawnEntity(location, type)</code></td><td>Spawn entity</td></tr>
+                            <tr><td><code>api.spawnEntity(location, typeName)</code></td><td>Spawn entity (string)</td></tr>
+                            <tr><td><code>api.setEntityCustomName(entity, name)</code></td><td>Set entity name</td></tr>
+                            <tr><td><code>api.setEntityGlowing(entity, glowing)</code></td><td>Set glowing</td></tr>
+                            <tr><td><code>api.setEntityGravity(entity, gravity)</code></td><td>Set gravity</td></tr>
+                            <tr><td><code>api.removeEntity(entity)</code></td><td>Remove entity</td></tr>
+                        </table>
+
+                        <h4>Utility Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.colorize(text)</code></td><td>Colorize text</td></tr>
+                            <tr><td><code>api.stripColor(text)</code></td><td>Strip colors</td></tr>
+                            <tr><td><code>api.format(format, ...args)</code></td><td>Format string</td></tr>
+                            <tr><td><code>api.round(value, places)</code></td><td>Round number</td></tr>
+                            <tr><td><code>api.clamp(value, min, max)</code></td><td>Clamp value</td></tr>
+                            <tr><td><code>api.md5(input)</code></td><td>MD5 hash</td></tr>
+                            <tr><td><code>api.sha256(input)</code></td><td>SHA256 hash</td></tr>
+                            <tr><td><code>api.base64Encode(input)</code></td><td>Base64 encode</td></tr>
+                            <tr><td><code>api.base64Decode(input)</code></td><td>Base64 decode</td></tr>
+                            <tr><td><code>api.urlEncode(input)</code></td><td>URL encode</td></tr>
+                            <tr><td><code>api.urlDecode(input)</code></td><td>URL decode</td></tr>
+                            <tr><td><code>api.getCurrentTimeMillis()</code></td><td>Get current time</td></tr>
+                            <tr><td><code>api.formatDate(timestamp)</code></td><td>Format date</td></tr>
+                            <tr><td><code>api.parseDate(dateString)</code></td><td>Parse date</td></tr>
+                            <tr><td><code>api.getDistance(loc1, loc2)</code></td><td>Get distance</td></tr>
+                            <tr><td><code>api.getMidpoint(loc1, loc2)</code></td><td>Get midpoint</td></tr>
+                            <tr><td><code>api.getMaterial(name)</code></td><td>Get material</td></tr>
+                            <tr><td><code>api.createLocation(world, x, y, z)</code></td><td>Create location</td></tr>
+                            <tr><td><code>api.createVector(x, y, z)</code></td><td>Create vector</td></tr>
+                            <tr><td><code>api.hasPermission(sender, permission)</code></td><td>Check permission</td></tr>
+                            <tr><td><code>api.executeCommand(command)</code></td><td>Execute console command</td></tr>
+                            <tr><td><code>api.httpGet(url)</code></td><td>HTTP GET request</td></tr>
+                            <tr><td><code>api.httpPost(url, data)</code></td><td>HTTP POST request</td></tr>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Advanced -->
+                <section id="advanced">
+                    <h2>🔧 Advanced Topics</h2>
+
+                    <div class="card">
+                        <h3>BossBar</h3>
+                        <pre><code class="language-javascript">// Create boss bar
+var bossBar = api.createBossBar("&cBoss Fight!", "RED", "SOLID");
+bossBar.addPlayer(player);
+bossBar.setProgress(0.5); // 50%
+
+// Update progress
+var progress = 0;
+var task = api.runTaskTimer(0, 20, function() {
+    progress += 0.01;
+    if (progress > 1) progress = 0;
+    bossBar.setProgress(progress);
+    bossBar.setTitle("&cBoss: " + Math.floor(progress * 100) + "%");
+});
+
+// Remove after 10 seconds
+api.runTaskLater(200, function() {
+    bossBar.removeAll();
+    api.cancelTask(task);
+});</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Particles & Sounds</h3>
+                        <pre><code class="language-javascript">// Spawn particles (string or enum)
+api.spawnParticle(location, "FIREWORK", 10, 0.5, 0.5, 0.5, 0.1);
+api.spawnParticle(location, Particle.FLAME, 5, 0, 0, 0);
+
+// Play sounds
+api.playSound(location, "ENTITY_PLAYER_LEVELUP", 1.0, 1.0);
+api.playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5, 1.5);
+
+// Particle effect at player location
+api.registerEvent("player.PlayerMoveEvent", function(event) {
+    var player = event.getPlayer();
+    if (player.isSprinting()) {
+        api.spawnParticle(player.getLocation(), "CLOUD", 3, 0, 0, 0);
+    }
+});</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>HTTP Requests</h3>
+                        <pre><code class="language-javascript">// GET request
+api.runTaskAsync(function() {
+    var response = api.httpGet("https://api.example.com/data");
+    logger.info("Response: " + response);
+    
+    // Parse JSON response
+    var data = JSON.parse(response);
+    
+    // Update on main thread
+    api.runTask(function() {
+        api.broadcast("&aData fetched: " + data.message);
+    });
+});
+
+// POST request
+api.runTaskAsync(function() {
+    var jsonData = JSON.stringify({
+        "player": "PlayerName",
+        "action": "join"
+    });
+    var response = api.httpPost("https://api.example.com/log", jsonData);
+    logger.info("POST response: " + response);
+});</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Utility Methods</h3>
+                        <pre><code class="language-javascript">// String utilities
+var colored = api.colorize("&aHello &bWorld");
+var stripped = api.stripColor(colored);
+var formatted = api.format("Hello %s! You have %d items.", "Player", 5);
+
+// Math utilities
+var rounded = api.round(3.14159, 2); // 3.14
+var clamped = api.clamp(150, 0, 100); // 100
+
+// Encoding
+var encoded = api.base64Encode("Hello World");
+var decoded = api.base64Decode(encoded);
+var md5 = api.md5("text");
+var sha256 = api.sha256("text");
+
+// Date/Time
+var now = api.getCurrentTimeMillis();
+var formatted = api.formatDate(now);
+var customFormat = api.formatDate(now, "dd.MM.yyyy HH:mm");
+var parsed = api.parseDate("2024-01-01 12:00:00");
+
+// Distance
+var distance = api.getDistance(loc1, loc2);
+var midpoint = api.getMidpoint(loc1, loc2);</code></pre>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <strong>⚠️ Important:</strong>
+                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                            <li>Always wrap code in try-catch blocks for error handling</li>
+                            <li>Use async tasks for HTTP requests and heavy operations</li>
+                            <li>Clean up resources (cancel tasks, close connections) in onDisable</li>
+                            <li>Use cooldowns to prevent spam</li>
+                            <li>Cache frequently accessed data</li>
+                        </ul>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <footer>
+        <p>MC-JS Documentation - Made with ❤️ for the Minecraft Community</p>
+        <p>Version 2.0.0 | <a href="https://github.com/yourusername/MC-JS" style="color: var(--primary);">GitHub</a></p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script>
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Highlight current section in sidebar
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const scrollPos = window.scrollY + 150;
+
+            sections.forEach(section => {
+                const top = section.offsetTop;
+                const bottom = top + section.offsetHeight;
+                const id = section.getAttribute('id');
+                const link = document.querySelector(`.sidebar a[href="#${id}"]`);
+
+                if (scrollPos >= top && scrollPos < bottom) {
+                    document.querySelectorAll('.sidebar a').forEach(a => {
+                        a.style.color = '';
+                    });
+                    if (link) {
+                        link.style.color = 'var(--primary)';
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
