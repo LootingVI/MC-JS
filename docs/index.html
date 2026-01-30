@@ -512,6 +512,121 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--primary-dark);
         }
+        
+        /* Collapsible Sections */
+        .api-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .api-section-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            margin-bottom: 0.5rem;
+            user-select: none;
+        }
+        
+        .api-section-header:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        
+        .api-section-header h4 {
+            margin: 0;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .api-section-toggle {
+            color: white;
+            font-size: 1.2rem;
+            transition: transform 0.3s;
+        }
+        
+        .api-section-header.active .api-section-toggle {
+            transform: rotate(180deg);
+        }
+        
+        .api-section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 8px;
+            padding: 0;
+        }
+        
+        .api-section-content.active {
+            max-height: 5000px;
+            padding: 1.5rem;
+            transition: max-height 0.5s ease-in;
+        }
+        
+        .api-section-content table {
+            margin-top: 0;
+        }
+        
+        /* Quick Links */
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .quick-link {
+            background: rgba(99, 102, 241, 0.1);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: var(--text);
+            display: block;
+        }
+        
+        .quick-link:hover {
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        
+        .quick-link-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .quick-link-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        /* Category Badge */
+        .category-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+        
+        /* Method Count */
+        .method-count {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
     </style>
 </head>
 <body>
@@ -963,6 +1078,9 @@ gui.fillBorders(background);
 // Set background for empty slots
 gui.setBackground(background);
 
+// Prevent items from being removed from the GUI (default: false)
+gui.setAllowItemRemoval(false);
+
 // Global click handler (called for all clicks)
 gui.onClick(function(event) {
     // This runs for every click, even if slot has specific handler
@@ -985,15 +1103,35 @@ player.openInventory(inv);</code></pre>
                         </div>
 
                         <div class="card">
-                            <h4>Create Items</h4>
+                            <h4>Create Items with Enchantments</h4>
                             <pre><code class="language-javascript">// Create item stack
-var diamond = api.createItemStack(api.getMaterial("DIAMOND"), 1);
+var sword = api.createItemStack(api.getMaterial("DIAMOND_SWORD"), 1);
 
 // Set display name
-diamond = api.setItemDisplayName(diamond, "&b&lSpecial Diamond");
+sword = api.setItemDisplayName(sword, "&b&lMagic Sword");
+
+// Add enchantments
+api.addEnchantment(sword, "SHARPNESS", 5);
+api.addEnchantment(sword, "FIRE_ASPECT", 2);
+api.addEnchantment(sword, "UNBREAKING", 3);
+
+// Check enchantments
+if (api.hasEnchantment(sword, "SHARPNESS")) {
+    var level = api.getEnchantmentLevel(sword, "SHARPNESS");
+    logger.info("Sword has Sharpness level " + level);
+}
+
+// Get all enchantments
+var enchantments = api.getEnchantments(sword);
+for (var enchantName in enchantments) {
+    logger.info(enchantName + ": " + enchantments[enchantName]);
+}
+
+// Remove enchantment
+api.removeEnchantment(sword, "FIRE_ASPECT");
 
 // Set lore
-diamond = api.setItemLore(diamond, [
+sword = api.setItemLore(sword, [
     "&7This is a special diamond",
     "&7given by the JS plugin!",
     "&eRight-click to use"
@@ -1224,8 +1362,35 @@ var data = {
 api.saveYamlFile("config", data);
 
 // Load YAML
+// Note: loadYamlFile returns a Java Map object, use .get() to access values
 var config = api.loadYamlFile("config");
-var serverName = config.server.name;</code></pre>
+var serverName = config.get("server").get("name");
+
+// For simple values, you can use direct access (works in Rhino)
+var serverName2 = config.get("server").get("name");
+
+// Working with arrays in YAML:
+var bansData = api.loadYamlFile("bansystem_bans");
+var bansList = bansData.get("bans"); // Java List
+var nextId = bansData.get("nextId");
+
+// Convert Java List to JavaScript array if needed
+var bans = [];
+if (bansList instanceof java.util.List) {
+    for (var i = 0; i < bansList.size(); i++) {
+        var banObj = bansList.get(i);
+        // Convert Java Map to JavaScript object
+        var ban = {};
+        if (banObj instanceof java.util.Map) {
+            var keys = banObj.keySet().toArray();
+            for (var j = 0; j < keys.length; j++) {
+                var key = keys[j];
+                ban[key] = banObj.get(key);
+            }
+        }
+        bans.push(ban);
+    }
+}</code></pre>
                         </div>
 
                         <div class="card">
@@ -1772,17 +1937,65 @@ this.pluginInfo = pluginInfo;</code></pre>
                     
                     <div class="card">
                         <h3>All Available Methods</h3>
-                        <p>This is a comprehensive list of all API methods available in MC-JS:</p>
+                        <p>This is a comprehensive list of all API methods available in MC-JS. Click on a category to expand:</p>
                         
-                        <h4>Command Methods</h4>
+                        <!-- Quick Links -->
+                        <div class="quick-links">
+                            <a href="#api-commands" class="quick-link">
+                                <span class="quick-link-icon">⚡</span>
+                                <span class="quick-link-title">Commands</span>
+                            </a>
+                            <a href="#api-events" class="quick-link">
+                                <span class="quick-link-icon">🎯</span>
+                                <span class="quick-link-title">Events</span>
+                            </a>
+                            <a href="#api-tasks" class="quick-link">
+                                <span class="quick-link-icon">⏱️</span>
+                                <span class="quick-link-title">Tasks</span>
+                            </a>
+                            <a href="#api-players" class="quick-link">
+                                <span class="quick-link-icon">👤</span>
+                                <span class="quick-link-title">Players</span>
+                            </a>
+                            <a href="#api-inventory" class="quick-link">
+                                <span class="quick-link-icon">📦</span>
+                                <span class="quick-link-title">Inventory</span>
+                            </a>
+                            <a href="#api-items" class="quick-link">
+                                <span class="quick-link-icon">⚔️</span>
+                                <span class="quick-link-title">Items</span>
+                            </a>
+                            <a href="#api-worlds" class="quick-link">
+                                <span class="quick-link-icon">🌍</span>
+                                <span class="quick-link-title">Worlds</span>
+                            </a>
+                            <a href="#api-entities" class="quick-link">
+                                <span class="quick-link-icon">👾</span>
+                                <span class="quick-link-title">Entities</span>
+                            </a>
+                        </div>
+                        
+                        <div id="api-commands" class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">⚡</span>Command Methods <span class="method-count">(3 methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.registerCommand(name, executor)</code></td><td>Register simple command</td></tr>
                             <tr><td><code>api.registerCommand(name, desc, usage, executor)</code></td><td>Register command with description</td></tr>
                             <tr><td><code>api.registerCommand(name, desc, usage, executor, completer)</code></td><td>Register command with tab completion</td></tr>
                         </table>
+                            </div>
+                        </div>
 
-                        <h4>Event Methods</h4>
+                        <div id="api-events" class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">🎯</span>Event Methods <span class="method-count">(6 methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.registerEvent(eventClassName, handler)</code></td><td>Register event by string name</td></tr>
@@ -1792,8 +2005,15 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.createCustomInventory(size, title)</code></td><td>Create custom inventory</td></tr>
                             <tr><td><code>api.createGUI(title, rows)</code></td><td>Create GUI builder</td></tr>
                         </table>
+                            </div>
+                        </div>
 
-                        <h4>Task Methods</h4>
+                        <div id="api-tasks" class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">⏱️</span>Task Methods <span class="method-count">(8 methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.runTask(task)</code></td><td>Run task on next tick</td></tr>
@@ -1801,10 +2021,19 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.runTaskTimer(delay, period, task)</code></td><td>Run repeating task</td></tr>
                             <tr><td><code>api.runTaskAsync(task)</code></td><td>Run async task</td></tr>
                             <tr><td><code>api.runTaskLaterAsync(delay, task)</code></td><td>Run delayed async task</td></tr>
+                            <tr><td><code>api.runTaskSafe(task, onError)</code></td><td>Run task with error handler</td></tr>
+                            <tr><td><code>api.runTaskAsyncSafe(task, onError)</code></td><td>Run async task with error handler</td></tr>
                             <tr><td><code>api.cancelTask(task)</code></td><td>Cancel running task</td></tr>
                         </table>
+                            </div>
+                        </div>
 
-                        <h4>Player Methods</h4>
+                        <div id="api-players" class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">👤</span>Player Methods <span class="method-count">(30+ methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.getPlayer(name)</code></td><td>Get player by name</td></tr>
@@ -1833,13 +2062,51 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.getGameMode(player)</code></td><td>Get game mode</td></tr>
                             <tr><td><code>api.teleport(player, location)</code></td><td>Teleport player</td></tr>
                             <tr><td><code>api.teleport(entity, location)</code></td><td>Teleport entity</td></tr>
+                            <tr><td><code>api.getPlayerByUUID(uuid)</code></td><td>Get player by UUID</td></tr>
+                            <tr><td><code>api.getOfflinePlayer(name)</code></td><td>Get offline player</td></tr>
+                            <tr><td><code>api.getOfflinePlayerByUUID(uuid)</code></td><td>Get offline player by UUID</td></tr>
+                            <tr><td><code>api.isPlayerOnline(name/player)</code></td><td>Check if player is online</td></tr>
                             <tr><td><code>api.kickPlayer(player, reason)</code></td><td>Kick player</td></tr>
                             <tr><td><code>api.banPlayer(name, reason)</code></td><td>Ban player</td></tr>
                             <tr><td><code>api.unbanPlayer(name)</code></td><td>Unban player</td></tr>
                             <tr><td><code>api.isBanned(name)</code></td><td>Check if banned</td></tr>
+                            <tr><td><code>api.addToWhitelist(name)</code></td><td>Add to whitelist</td></tr>
+                            <tr><td><code>api.removeFromWhitelist(name)</code></td><td>Remove from whitelist</td></tr>
+                            <tr><td><code>api.isWhitelisted(name)</code></td><td>Check if whitelisted</td></tr>
+                            <tr><td><code>api.setWhitelistEnabled(enabled)</code></td><td>Enable/disable whitelist</td></tr>
+                            <tr><td><code>api.isWhitelistEnabled()</code></td><td>Check if whitelist enabled</td></tr>
+                            <tr><td><code>api.generateOfflineUUID(name)</code></td><td>Generate UUID for offline player</td></tr>
                         </table>
+                        
+                        <h5 style="margin-top: 1.5rem; color: var(--primary);">Permission Methods</h5>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.hasPermission(sender, permission)</code></td><td>Check permission (CommandSender)</td></tr>
+                            <tr><td><code>api.hasPermission(player, permission)</code></td><td>Check permission (Player)</td></tr>
+                            <tr><td><code>api.addPermission(player, permission)</code></td><td>Add permission to player</td></tr>
+                            <tr><td><code>api.removePermission(player, permission)</code></td><td>Remove permission from player</td></tr>
+                            <tr><td><code>api.isOp(player)</code></td><td>Check if player is OP</td></tr>
+                            <tr><td><code>api.setOp(player, op)</code></td><td>Set player OP status</td></tr>
+                        </table>
+                        
+                        <h5 style="margin-top: 1.5rem; color: var(--primary);">Player Data Methods</h5>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.setPlayerMetadata(player, key, value)</code></td><td>Set player metadata</td></tr>
+                            <tr><td><code>api.getPlayerMetadata(player, key)</code></td><td>Get player metadata</td></tr>
+                            <tr><td><code>api.hasPlayerMetadata(player, key)</code></td><td>Check if player has metadata</td></tr>
+                            <tr><td><code>api.removePlayerMetadata(player, key)</code></td><td>Remove player metadata</td></tr>
+                        </table>
+                            </div>
+                        </div>
 
-                        <h4>Inventory & Item Methods</h4>
+                        <div id="api-inventory" class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">📦</span>Inventory & GUI Methods <span class="method-count">(20+ methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
+                        <h5 style="color: var(--primary);">Basic Inventory Methods</h5>
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.createInventory(holder, size, title)</code></td><td>Create inventory</td></tr>
@@ -1855,7 +2122,7 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.setInventoryItem(inv, slot, item)</code></td><td>Set item in slot</td></tr>
                         </table>
                         
-                        <h4>GUI Builder Methods</h4>
+                        <h5 style="margin-top: 1.5rem; color: var(--primary);">GUI Builder Methods</h5>
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>gui.setItem(slot, item)</code></td><td>Set item at slot</td></tr>
@@ -1866,11 +2133,12 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>gui.setBackground(item)</code></td><td>Set background for empty slots</td></tr>
                             <tr><td><code>gui.onClick(handler)</code></td><td>Set global click handler</td></tr>
                             <tr><td><code>gui.onClose(handler)</code></td><td>Set close handler</td></tr>
+                            <tr><td><code>gui.setAllowItemRemoval(allow)</code></td><td>Allow/prevent items from being removed from GUI (default: false)</td></tr>
                             <tr><td><code>gui.build()</code></td><td>Build and return inventory</td></tr>
                             <tr><td><code>gui.buildAndOpen(player)</code></td><td>Build and open for player</td></tr>
                         </table>
                         
-                        <h4>Custom Inventory Holder Methods</h4>
+                        <h5 style="margin-top: 1.5rem; color: var(--primary);">Custom Inventory Holder Methods</h5>
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>holder.setData(key, value)</code></td><td>Store custom data</td></tr>
@@ -1880,7 +2148,29 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>holder.clearData()</code></td><td>Clear all custom data</td></tr>
                         </table>
                         
-                        <h4>Item Methods</h4>
+                        <h5 style="margin-top: 1.5rem; color: var(--primary);">Custom Inventory Management</h5>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.updateInventoryItem(inv, slot, item)</code></td><td>Update item in custom inventory</td></tr>
+                            <tr><td><code>api.getInventoryItem(inv, slot)</code></td><td>Get item from custom inventory</td></tr>
+                            <tr><td><code>api.clearInventory(inv)</code></td><td>Clear custom inventory</td></tr>
+                            <tr><td><code>api.refreshInventory(inv)</code></td><td>Refresh/rebuild custom inventory</td></tr>
+                            <tr><td><code>api.isInventorySlotEmpty(inv, slot)</code></td><td>Check if slot is empty</td></tr>
+                            <tr><td><code>api.getFirstEmptySlot(inv)</code></td><td>Get first empty slot</td></tr>
+                            <tr><td><code>api.addItemToInventory(inv, item)</code></td><td>Add item to inventory</td></tr>
+                            <tr><td><code>api.removeItemFromInventory(inv, item)</code></td><td>Remove item from inventory</td></tr>
+                            <tr><td><code>api.inventoryContains(inv, item)</code></td><td>Check if inventory contains item</td></tr>
+                            <tr><td><code>api.inventoryContainsAtLeast(inv, item, amount)</code></td><td>Check if inventory has at least amount</td></tr>
+                        </table>
+                            </div>
+                        </div>
+
+                        <div id="api-items" class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">⚔️</span>Item Methods <span class="method-count">(15+ methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.setInventoryItem(inv, slot, item)</code></td><td>Set item in slot</td></tr>
@@ -1898,8 +2188,26 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.getItemMeta(item)</code></td><td>Get item meta</td></tr>
                             <tr><td><code>api.setItemMeta(item, meta)</code></td><td>Set item meta</td></tr>
                         </table>
+                        
+                        <h5 style="margin-top: 1.5rem; color: var(--primary);">Enchantment Methods</h5>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.addEnchantment(item, name, level)</code></td><td>Add enchantment to item</td></tr>
+                            <tr><td><code>api.removeEnchantment(item, name)</code></td><td>Remove enchantment from item</td></tr>
+                            <tr><td><code>api.hasEnchantment(item, name)</code></td><td>Check if item has enchantment</td></tr>
+                            <tr><td><code>api.getEnchantmentLevel(item, name)</code></td><td>Get enchantment level</td></tr>
+                            <tr><td><code>api.getEnchantments(item)</code></td><td>Get all enchantments (returns Map)</td></tr>
+                        </table>
+                            </div>
+                        </div>
 
-                        <h4>Database Methods</h4>
+                        <div class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">💾</span>Database Methods <span class="method-count">(7 methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
+                        <table>
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.createTable(dbName, tableName, columns)</code></td><td>Create database table</td></tr>
@@ -1910,19 +2218,36 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.countRows(dbName, tableName)</code></td><td>Count rows</td></tr>
                             <tr><td><code>api.executeSQL(dbName, sql)</code></td><td>Execute SQL</td></tr>
                         </table>
+                            </div>
+                        </div>
 
-                        <h4>File Methods</h4>
+                        <div class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">📁</span>File Methods <span class="method-count">(9 methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
+                        <table>
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
-                            <tr><td><code>api.saveYamlFile(fileName, data)</code></td><td>Save YAML file</td></tr>
-                            <tr><td><code>api.loadYamlFile(fileName)</code></td><td>Load YAML file</td></tr>
+                            <tr><td><code>api.saveYamlFile(fileName, data)</code></td><td>Save YAML file (data as Map/Object)</td></tr>
+                            <tr><td><code>api.loadYamlFile(fileName)</code></td><td>Load YAML file (returns Java Map, use .get() to access values)</td></tr>
                             <tr><td><code>api.saveJsonFile(fileName, content)</code></td><td>Save JSON file</td></tr>
-                            <tr><td><code>api.loadJsonFile(fileName)</code></td><td>Load JSON file</td></tr>
+                            <tr><td><code>api.loadJsonFile(fileName)</code></td><td>Load JSON file (returns JSON string)</td></tr>
                             <tr><td><code>api.saveTextFile(fileName, content)</code></td><td>Save text file</td></tr>
-                            <tr><td><code>api.loadTextFile(fileName)</code></td><td>Load text file</td></tr>
+                            <tr><td><code>api.loadTextFile(fileName)</code></td><td>Load text file (returns string)</td></tr>
                         </table>
+                        <p><strong>Important:</strong> <code>loadYamlFile</code> returns a Java <code>Map</code> object. Use <code>.get(key)</code> to access values. Arrays are returned as Java <code>List</code> objects. Use <code>instanceof java.util.List</code> to check and convert to JavaScript arrays if needed. See the YAML Files section above for examples.</p>
+                            </div>
+                        </div>
 
-                        <h4>Config Methods</h4>
+                        <div class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">⚙️</span>Config Methods <span class="method-count">(4 methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
+                        <table>
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.getPluginConfig(pluginName)</code></td><td>Get plugin config</td></tr>
@@ -1930,8 +2255,16 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.getPluginConfigValue(pluginName, path)</code></td><td>Get config value</td></tr>
                             <tr><td><code>api.setPluginConfigValue(pluginName, path, value)</code></td><td>Set config value</td></tr>
                         </table>
+                            </div>
+                        </div>
 
-                        <h4>Cooldown Methods</h4>
+                        <div class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">⏳</span>Cooldown Methods <span class="method-count">(5 methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
+                        <table>
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.hasCooldown(playerName, key)</code></td><td>Check cooldown</td></tr>
@@ -1957,8 +2290,16 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.playSound(player, sound, volume, pitch)</code></td><td>Play sound for player</td></tr>
                             <tr><td><code>api.playSound(loc, soundName, volume, pitch)</code></td><td>Play sound (string)</td></tr>
                         </table>
+                            </div>
+                        </div>
 
-                        <h4>World & Block Methods</h4>
+                        <div id="api-worlds" class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">🌍</span>World & Block Methods <span class="method-count">(20+ methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
+                        <table>
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.getWorld(name)</code></td><td>Get world by name</td></tr>
@@ -1981,8 +2322,33 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.strikeLightning(location)</code></td><td>Strike lightning</td></tr>
                             <tr><td><code>api.strikeLightningEffect(location)</code></td><td>Strike lightning effect</td></tr>
                         </table>
+                        
+                        <h5 style="margin-top: 1.5rem; color: var(--primary);">World Management Methods</h5>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.setWorldDifficulty(world, difficulty)</code></td><td>Set world difficulty (PEACEFUL, EASY, NORMAL, HARD)</td></tr>
+                            <tr><td><code>api.getWorldDifficulty(world)</code></td><td>Get world difficulty</td></tr>
+                            <tr><td><code>api.setWorldPVP(world, pvp)</code></td><td>Enable/disable PvP</td></tr>
+                            <tr><td><code>api.isWorldPVP(world)</code></td><td>Check if PvP enabled</td></tr>
+                            <tr><td><code>api.setWorldSpawnLocation(world, location)</code></td><td>Set world spawn location</td></tr>
+                            <tr><td><code>api.getWorldSpawnLocation(world)</code></td><td>Get world spawn location</td></tr>
+                            <tr><td><code>api.setWorldKeepSpawnInMemory(world, keepLoaded)</code></td><td>Keep spawn in memory</td></tr>
+                            <tr><td><code>api.isWorldKeepSpawnInMemory(world)</code></td><td>Check if spawn kept in memory</td></tr>
+                            <tr><td><code>api.setWorldAutoSave(world, autoSave)</code></td><td>Enable/disable auto-save</td></tr>
+                            <tr><td><code>api.isWorldAutoSave(world)</code></td><td>Check if auto-save enabled</td></tr>
+                            <tr><td><code>api.getWorldEnvironment(world)</code></td><td>Get world environment</td></tr>
+                            <tr><td><code>api.getWorldSeed(world)</code></td><td>Get world seed</td></tr>
+                        </table>
+                            </div>
+                        </div>
 
-                        <h4>Entity Methods</h4>
+                        <div id="api-entities" class="api-section">
+                            <div class="api-section-header" onclick="toggleSection(this)">
+                                <h4><span class="category-badge">👾</span>Entity Methods <span class="method-count">(15+ methods)</span></h4>
+                                <span class="api-section-toggle">▼</span>
+                            </div>
+                            <div class="api-section-content">
+                        <table>
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.spawnEntity(location, type)</code></td><td>Spawn entity</td></tr>
@@ -1991,6 +2357,16 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.setEntityCustomName(entity, name)</code></td><td>Set entity name</td></tr>
                             <tr><td><code>api.setEntityGlowing(entity, glowing)</code></td><td>Set glowing</td></tr>
                             <tr><td><code>api.setEntityGravity(entity, gravity)</code></td><td>Set gravity</td></tr>
+                            <tr><td><code>api.setEntityInvulnerable(entity, invulnerable)</code></td><td>Set invulnerable</td></tr>
+                            <tr><td><code>api.setEntityAI(entity, ai)</code></td><td>Enable/disable AI</td></tr>
+                            <tr><td><code>api.hasEntityAI(entity)</code></td><td>Check if entity has AI</td></tr>
+                            <tr><td><code>api.setEntitySilent(entity, silent)</code></td><td>Set entity silent</td></tr>
+                            <tr><td><code>api.isEntitySilent(entity)</code></td><td>Check if entity is silent</td></tr>
+                            <tr><td><code>api.setEntityCollidable(entity, collidable)</code></td><td>Set entity collidable</td></tr>
+                            <tr><td><code>api.isEntityCollidable(entity)</code></td><td>Check if entity is collidable</td></tr>
+                            <tr><td><code>api.getEntityLocation(entity)</code></td><td>Get entity location</td></tr>
+                            <tr><td><code>api.teleportEntity(entity, location)</code></td><td>Teleport entity to location</td></tr>
+                            <tr><td><code>api.teleportEntity(entity, target)</code></td><td>Teleport entity to target entity</td></tr>
                             <tr><td><code>api.removeEntity(entity)</code></td><td>Remove entity</td></tr>
                         </table>
                         
@@ -2101,10 +2477,20 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.formatDate(timestamp, pattern)</code></td><td>Format date with pattern</td></tr>
                             <tr><td><code>api.parseDate(dateString)</code></td><td>Parse date</td></tr>
                             <tr><td><code>api.parseDate(dateString, pattern)</code></td><td>Parse date with pattern</td></tr>
-                            <tr><td><code>api.hasPermission(sender, permission)</code></td><td>Check permission</td></tr>
                             <tr><td><code>api.executeCommand(command)</code></td><td>Execute console command</td></tr>
                             <tr><td><code>api.httpGet(url)</code></td><td>HTTP GET request</td></tr>
                             <tr><td><code>api.httpPost(url, data)</code></td><td>HTTP POST request</td></tr>
+                        </table>
+                        
+                        <h4>Validation Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.isValidPlayer(player)</code></td><td>Check if valid online player</td></tr>
+                            <tr><td><code>api.isValidLocation(location)</code></td><td>Check if valid location</td></tr>
+                            <tr><td><code>api.isValidWorld(world)</code></td><td>Check if valid world</td></tr>
+                            <tr><td><code>api.isValidItemStack(item)</code></td><td>Check if valid item stack</td></tr>
+                            <tr><td><code>api.isValidEntity(entity)</code></td><td>Check if valid entity</td></tr>
+                            <tr><td><code>api.isValidInventory(inventory)</code></td><td>Check if valid inventory</td></tr>
                         </table>
                         
                         <h4>File Existence Methods</h4>
@@ -2157,6 +2543,40 @@ api.runTaskLater(200, function() {
                     </div>
 
                     <div class="card">
+                        <h3>Permissions & Player Management</h3>
+                        <pre><code class="language-javascript">// Check permissions
+if (api.hasPermission(player, "myplugin.use")) {
+    // Player has permission
+}
+
+// Add/remove permissions dynamically
+api.addPermission(player, "myplugin.vip");
+api.removePermission(player, "myplugin.vip");
+
+// OP management
+if (api.isOp(player)) {
+    api.sendMessage(player, "You are OP!");
+}
+api.setOp(player, true);
+
+// Player metadata
+api.setPlayerMetadata(player, "lastLogin", api.getCurrentTimeMillis());
+var lastLogin = api.getPlayerMetadata(player, "lastLogin");
+if (api.hasPlayerMetadata(player, "lastLogin")) {
+    logger.info("Last login: " + lastLogin);
+}
+
+// Whitelist management
+api.addToWhitelist("PlayerName");
+api.removeFromWhitelist("PlayerName");
+if (api.isWhitelisted("PlayerName")) {
+    logger.info("Player is whitelisted");
+}
+api.setWhitelistEnabled(true);
+</code></pre>
+                    </div>
+
+                    <div class="card">
                         <h3>Particles & Sounds</h3>
                         <pre><code class="language-javascript">// Spawn particles (string or enum)
 api.spawnParticle(location, "FIREWORK", 10, 0.5, 0.5, 0.5, 0.1);
@@ -2173,6 +2593,107 @@ api.registerEvent("player.PlayerMoveEvent", function(event) {
         api.spawnParticle(player.getLocation(), "CLOUD", 3, 0, 0, 0);
     }
 });</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Entity Manipulation</h3>
+                        <pre><code class="language-javascript">// Spawn entity
+var zombie = api.spawnEntity(location, "ZOMBIE");
+
+// Set properties
+api.setEntityCustomName(zombie, "&cBoss Zombie");
+api.setEntityGlowing(zombie, true);
+api.setEntityGravity(zombie, false);
+api.setEntityInvulnerable(zombie, true);
+
+// AI control
+api.setEntityAI(zombie, false); // Disable AI
+if (!api.hasEntityAI(zombie)) {
+    logger.info("Zombie has no AI");
+}
+
+// Silent and collidable
+api.setEntitySilent(zombie, true);
+api.setEntityCollidable(zombie, false);
+
+// Teleport entity
+var targetLocation = api.createLocation(world, 100, 64, 200);
+api.teleportEntity(zombie, targetLocation);
+
+// Or teleport to another entity
+api.teleportEntity(zombie, player);
+
+// Get entity location
+var entityLoc = api.getEntityLocation(zombie);
+
+// Remove entity
+api.removeEntity(zombie);
+</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>World Management</h3>
+                        <pre><code class="language-javascript">// Difficulty
+api.setWorldDifficulty(world, "HARD");
+var difficulty = api.getWorldDifficulty(world);
+
+// PvP
+api.setWorldPVP(world, true);
+if (api.isWorldPVP(world)) {
+    logger.info("PvP is enabled");
+}
+
+// Spawn location
+var spawnLoc = api.createLocation(world, 0, 64, 0);
+api.setWorldSpawnLocation(world, spawnLoc);
+var currentSpawn = api.getWorldSpawnLocation(world);
+
+// Auto-save
+api.setWorldAutoSave(world, false);
+if (!api.isWorldAutoSave(world)) {
+    logger.info("Auto-save disabled");
+}
+
+// World info
+var environment = api.getWorldEnvironment(world);
+var seed = api.getWorldSeed(world);
+logger.info("World: " + world.getName() + ", Seed: " + seed);
+</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Validation & Error Handling</h3>
+                        <pre><code class="language-javascript">// Validate objects before use
+var player = api.getPlayer("PlayerName");
+if (api.isValidPlayer(player)) {
+    // Safe to use player
+    api.sendMessage(player, "Hello!");
+} else {
+    logger.warning("Player not found or offline");
+}
+
+// Validate locations
+var location = api.createLocation(world, 0, 64, 0);
+if (api.isValidLocation(location)) {
+    api.teleport(player, location);
+}
+
+// Validate items
+var item = api.getItemInMainHand(player);
+if (api.isValidItemStack(item)) {
+    api.addEnchantment(item, "SHARPNESS", 1);
+}
+
+// Safe async tasks with error handling
+api.runTaskAsyncSafe(function() {
+    // Async work here
+    var data = api.loadYamlFile("data");
+    // Process data...
+}, function(error) {
+    // Error handler
+    logger.severe("Error in async task: " + error);
+});
+</code></pre>
                     </div>
 
                     <div class="card">
@@ -2637,7 +3158,27 @@ function loadPlayerData(playerName) {
     try {
         var data = api.loadYamlFile("players/" + playerName);
         if (data) {
-            playerData[playerName] = data;
+            // Convert Java Map to JavaScript object
+            var playerObj = {};
+            if (data instanceof java.util.Map) {
+                var keys = data.keySet().toArray();
+                for (var i = 0; i < keys.length; i++) {
+                    var key = keys[i];
+                    var value = data.get(key);
+                    // Handle nested Maps
+                    if (value instanceof java.util.Map) {
+                        var nestedObj = {};
+                        var nestedKeys = value.keySet().toArray();
+                        for (var j = 0; j < nestedKeys.length; j++) {
+                            nestedObj[nestedKeys[j]] = value.get(nestedKeys[j]);
+                        }
+                        playerObj[key] = nestedObj;
+                    } else {
+                        playerObj[key] = value;
+                    }
+                }
+            }
+            playerData[playerName] = playerObj;
         }
     } catch (e) {
         logger.warning("No data found for " + playerName);
@@ -2943,6 +3484,68 @@ function openShop(player) {
                     });
                     if (link) {
                         link.style.color = 'var(--primary)';
+                    }
+                }
+            });
+        });
+        
+        // Toggle collapsible sections
+        function toggleSection(header) {
+            const content = header.nextElementSibling;
+            const isActive = header.classList.contains('active');
+            
+            // Close all other sections (optional - remove if you want multiple open)
+            // document.querySelectorAll('.api-section-header').forEach(h => {
+            //     if (h !== header) {
+            //         h.classList.remove('active');
+            //         h.nextElementSibling.classList.remove('active');
+            //     }
+            // });
+            
+            // Toggle current section
+            if (isActive) {
+                header.classList.remove('active');
+                content.classList.remove('active');
+            } else {
+                header.classList.add('active');
+                content.classList.add('active');
+                
+                // Scroll to section smoothly
+                setTimeout(() => {
+                    header.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            }
+        }
+        
+        // Auto-expand section if hash in URL
+        window.addEventListener('load', () => {
+            const hash = window.location.hash;
+            if (hash) {
+                const targetSection = document.querySelector(hash);
+                if (targetSection && targetSection.classList.contains('api-section')) {
+                    const header = targetSection.querySelector('.api-section-header');
+                    if (header && !header.classList.contains('active')) {
+                        toggleSection(header);
+                    }
+                }
+            }
+        });
+        
+        // Make quick links expand sections
+        document.querySelectorAll('.quick-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href').substring(1);
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    const header = targetSection.querySelector('.api-section-header');
+                    if (header) {
+                        if (!header.classList.contains('active')) {
+                            toggleSection(header);
+                        }
+                        setTimeout(() => {
+                            targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 100);
                     }
                 }
             });

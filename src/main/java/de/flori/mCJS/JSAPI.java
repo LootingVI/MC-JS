@@ -764,15 +764,109 @@ public class JSAPI {
     }
 
     public Player getPlayer(String name) {
-        return Bukkit.getPlayer(name);
+        return name != null ? Bukkit.getPlayer(name) : null;
     }
 
     public Player getPlayerExact(String name) {
-        return Bukkit.getPlayerExact(name);
+        return name != null ? Bukkit.getPlayerExact(name) : null;
+    }
+    
+    public Player getPlayerByUUID(String uuid) {
+        if (uuid == null) {
+            return null;
+        }
+        try {
+            return Bukkit.getPlayer(java.util.UUID.fromString(uuid));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+    
+    public OfflinePlayer getOfflinePlayer(String name) {
+        return name != null ? Bukkit.getOfflinePlayer(name) : null;
+    }
+    
+    public OfflinePlayer getOfflinePlayerByUUID(String uuid) {
+        if (uuid == null) {
+            return null;
+        }
+        try {
+            return Bukkit.getOfflinePlayer(java.util.UUID.fromString(uuid));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public Collection<? extends Player> getOnlinePlayers() {
         return Bukkit.getOnlinePlayers();
+    }
+    
+    public boolean isPlayerOnline(String name) {
+        return name != null && Bukkit.getPlayer(name) != null;
+    }
+    
+    public boolean isPlayerOnline(Player player) {
+        return player != null && player.isOnline();
+    }
+    
+    public void kickPlayer(Player player, String reason) {
+        if (player != null && reason != null) {
+            player.kickPlayer(ChatColor.translateAlternateColorCodes('&', reason));
+        }
+    }
+    
+    public void banPlayer(String playerName, String reason) {
+        if (playerName == null) {
+            return;
+        }
+        try {
+            Bukkit.getBanList(org.bukkit.BanList.Type.NAME).addBan(
+                playerName,
+                reason != null ? ChatColor.translateAlternateColorCodes('&', reason) : "Banned by an operator",
+                null,
+                null
+            );
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error banning player '" + playerName + "': " + e.getMessage());
+        }
+    }
+    
+    public void unbanPlayer(String playerName) {
+        if (playerName != null) {
+            try {
+                Bukkit.getBanList(org.bukkit.BanList.Type.NAME).pardon(playerName);
+            } catch (Exception e) {
+                plugin.getLogger().warning("Error unbanning player '" + playerName + "': " + e.getMessage());
+            }
+        }
+    }
+    
+    public boolean isBanned(String playerName) {
+        return playerName != null && Bukkit.getBanList(org.bukkit.BanList.Type.NAME).isBanned(playerName);
+    }
+    
+    public void addToWhitelist(String playerName) {
+        if (playerName != null) {
+            Bukkit.getWhitelistedPlayers().add(Bukkit.getOfflinePlayer(playerName));
+        }
+    }
+    
+    public void removeFromWhitelist(String playerName) {
+        if (playerName != null) {
+            Bukkit.getWhitelistedPlayers().remove(Bukkit.getOfflinePlayer(playerName));
+        }
+    }
+    
+    public boolean isWhitelisted(String playerName) {
+        return playerName != null && Bukkit.getOfflinePlayer(playerName).isWhitelisted();
+    }
+    
+    public void setWhitelistEnabled(boolean enabled) {
+        Bukkit.setWhitelist(enabled);
+    }
+    
+    public boolean isWhitelistEnabled() {
+        return Bukkit.hasWhitelist();
     }
 
     public World getWorld(String name) {
@@ -848,7 +942,8 @@ public class JSAPI {
      */
     public static class CustomInventoryHolder implements InventoryHolder {
         private Inventory inventory;
-        private Map<String, Object> data = new HashMap<>();
+        private final Map<String, Object> data = new HashMap<>();
+        private volatile boolean closed = false;
         
         @Override
         public Inventory getInventory() {
@@ -860,38 +955,54 @@ public class JSAPI {
         }
         
         /**
-         * Store custom data in the holder
+         * Store custom data in the holder (thread-safe)
          */
-        public void setData(String key, Object value) {
-            data.put(key, value);
+        public synchronized void setData(String key, Object value) {
+            if (!closed) {
+                data.put(key, value);
+            }
         }
         
         /**
-         * Get custom data from the holder
+         * Get custom data from the holder (thread-safe)
          */
-        public Object getData(String key) {
+        public synchronized Object getData(String key) {
             return data.get(key);
         }
         
         /**
-         * Get all custom data
+         * Get all custom data (thread-safe)
          */
-        public Map<String, Object> getAllData() {
+        public synchronized Map<String, Object> getAllData() {
             return new HashMap<>(data);
         }
         
         /**
-         * Remove custom data
+         * Remove custom data (thread-safe)
          */
-        public void removeData(String key) {
+        public synchronized void removeData(String key) {
             data.remove(key);
         }
         
         /**
-         * Clear all custom data
+         * Clear all custom data (thread-safe)
          */
-        public void clearData() {
+        public synchronized void clearData() {
             data.clear();
+        }
+        
+        /**
+         * Mark this inventory as closed
+         */
+        public synchronized void markClosed() {
+            closed = true;
+        }
+        
+        /**
+         * Check if inventory is closed
+         */
+        public synchronized boolean isClosed() {
+            return closed;
         }
     }
 
@@ -922,6 +1033,9 @@ public class JSAPI {
     }
 
     public ItemStack setItemLore(ItemStack item, List<String> lore) {
+        if (item == null || lore == null) {
+            return item;
+        }
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             List<String> coloredLore = new ArrayList<>();
@@ -932,6 +1046,76 @@ public class JSAPI {
             item.setItemMeta(meta);
         }
         return item;
+    }
+    
+    // ===== ENCHANTMENT METHODS =====
+    public void addEnchantment(ItemStack item, String enchantmentName, int level) {
+        if (item == null || enchantmentName == null) {
+            return;
+        }
+        try {
+            org.bukkit.enchantments.Enchantment enchantment = org.bukkit.enchantments.Enchantment.getByName(enchantmentName.toUpperCase());
+            if (enchantment != null) {
+                item.addUnsafeEnchantment(enchantment, level);
+            } else {
+                plugin.getLogger().warning("Enchantment '" + enchantmentName + "' not found");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error adding enchantment '" + enchantmentName + "': " + e.getMessage());
+        }
+    }
+    
+    public void removeEnchantment(ItemStack item, String enchantmentName) {
+        if (item == null || enchantmentName == null) {
+            return;
+        }
+        try {
+            org.bukkit.enchantments.Enchantment enchantment = org.bukkit.enchantments.Enchantment.getByName(enchantmentName.toUpperCase());
+            if (enchantment != null) {
+                item.removeEnchantment(enchantment);
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error removing enchantment '" + enchantmentName + "': " + e.getMessage());
+        }
+    }
+    
+    public boolean hasEnchantment(ItemStack item, String enchantmentName) {
+        if (item == null || enchantmentName == null) {
+            return false;
+        }
+        try {
+            org.bukkit.enchantments.Enchantment enchantment = org.bukkit.enchantments.Enchantment.getByName(enchantmentName.toUpperCase());
+            return enchantment != null && item.containsEnchantment(enchantment);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    public int getEnchantmentLevel(ItemStack item, String enchantmentName) {
+        if (item == null || enchantmentName == null) {
+            return 0;
+        }
+        try {
+            org.bukkit.enchantments.Enchantment enchantment = org.bukkit.enchantments.Enchantment.getByName(enchantmentName.toUpperCase());
+            return enchantment != null ? item.getEnchantmentLevel(enchantment) : 0;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+    
+    public Map<String, Integer> getEnchantments(ItemStack item) {
+        Map<String, Integer> enchantments = new HashMap<>();
+        if (item == null) {
+            return enchantments;
+        }
+        try {
+            for (Map.Entry<org.bukkit.enchantments.Enchantment, Integer> entry : item.getEnchantments().entrySet()) {
+                enchantments.put(entry.getKey().getName(), entry.getValue());
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error getting enchantments: " + e.getMessage());
+        }
+        return enchantments;
     }
 
     // ===== LOCATION METHODS =====
@@ -1332,6 +1516,10 @@ public class JSAPI {
     }
 
     public void insertData(String dbName, String tableName, Map<String, Object> data) {
+        insertDataAndGetId(dbName, tableName, data);
+    }
+
+    public long insertDataAndGetId(String dbName, String tableName, Map<String, Object> data) {
         StringBuilder columns = new StringBuilder();
         StringBuilder values = new StringBuilder();
         List<Object> params = new ArrayList<>();
@@ -1351,16 +1539,32 @@ public class JSAPI {
         String sql = "INSERT OR REPLACE INTO " + tableName + " (" + columns + ") VALUES (" + values + ")";
 
         try (java.sql.Connection conn = getDatabaseConnection(dbName);
-             java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
+             java.sql.PreparedStatement stmt = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
 
             for (int i = 0; i < params.size(); i++) {
                 stmt.setObject(i + 1, params.get(i));
             }
             stmt.executeUpdate();
+            
+            // Get the generated ID
+            try (java.sql.ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    return generatedKeys.getLong(1);
+                }
+            }
+            
+            // Fallback: use last_insert_rowid()
+            try (java.sql.Statement stmt2 = conn.createStatement();
+                 java.sql.ResultSet rs = stmt2.executeQuery("SELECT last_insert_rowid()")) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
         } catch (Exception e) {
             plugin.getLogger().severe("Error inserting data: " + e.getMessage());
             e.printStackTrace();
         }
+        return -1;
     }
 
     // ===== HTTP REQUESTS =====
@@ -1541,7 +1745,51 @@ public class JSAPI {
 
     // ===== PERMISSION METHODS =====
     public boolean hasPermission(CommandSender sender, String permission) {
+        if (sender == null || permission == null) {
+            return false;
+        }
         return sender.hasPermission(permission);
+    }
+    
+    public boolean hasPermission(Player player, String permission) {
+        if (player == null || permission == null) {
+            return false;
+        }
+        return player.hasPermission(permission);
+    }
+    
+    public void addPermission(Player player, String permission) {
+        if (player == null || permission == null) {
+            return;
+        }
+        try {
+            org.bukkit.permissions.PermissionAttachment attachment = player.addAttachment(plugin);
+            attachment.setPermission(permission, true);
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error adding permission '" + permission + "' to player '" + player.getName() + "': " + e.getMessage());
+        }
+    }
+    
+    public void removePermission(Player player, String permission) {
+        if (player == null || permission == null) {
+            return;
+        }
+        try {
+            org.bukkit.permissions.PermissionAttachment attachment = player.addAttachment(plugin);
+            attachment.setPermission(permission, false);
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error removing permission '" + permission + "' from player '" + player.getName() + "': " + e.getMessage());
+        }
+    }
+    
+    public boolean isOp(Player player) {
+        return player != null && player.isOp();
+    }
+    
+    public void setOp(Player player, boolean op) {
+        if (player != null) {
+            player.setOp(op);
+        }
     }
 
     // ===== MATERIAL AND BLOCK METHODS =====
@@ -1589,7 +1837,74 @@ public class JSAPI {
     }
 
     public void setStorm(World world, boolean storm) {
-        world.setStorm(storm);
+        if (world != null) {
+            world.setStorm(storm);
+        }
+    }
+    
+    // ===== WORLD MANAGEMENT METHODS =====
+    public void setWorldDifficulty(World world, String difficulty) {
+        if (world == null || difficulty == null) {
+            return;
+        }
+        try {
+            Difficulty diff = Difficulty.valueOf(difficulty.toUpperCase());
+            world.setDifficulty(diff);
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Invalid difficulty: " + difficulty);
+        }
+    }
+    
+    public String getWorldDifficulty(World world) {
+        return world != null ? world.getDifficulty().name() : null;
+    }
+    
+    public void setWorldPVP(World world, boolean pvp) {
+        if (world != null) {
+            world.setPVP(pvp);
+        }
+    }
+    
+    public boolean isWorldPVP(World world) {
+        return world != null && world.getPVP();
+    }
+    
+    public void setWorldSpawnLocation(World world, Location location) {
+        if (world != null && location != null) {
+            world.setSpawnLocation(location);
+        }
+    }
+    
+    public Location getWorldSpawnLocation(World world) {
+        return world != null ? world.getSpawnLocation() : null;
+    }
+    
+    public void setWorldKeepSpawnInMemory(World world, boolean keepLoaded) {
+        if (world != null) {
+            world.setKeepSpawnInMemory(keepLoaded);
+        }
+    }
+    
+    public boolean isWorldKeepSpawnInMemory(World world) {
+        return world != null && world.getKeepSpawnInMemory();
+    }
+    
+    public void setWorldAutoSave(World world, boolean autoSave) {
+        if (world != null) {
+            world.setAutoSave(autoSave);
+        }
+    }
+    
+    public boolean isWorldAutoSave(World world) {
+        return world != null && world.isAutoSave();
+    }
+    
+    public World.Environment getWorldEnvironment(World world) {
+        return world != null ? world.getEnvironment() : null;
+    }
+    
+    public long getWorldSeed(World world) {
+        return world != null ? world.getSeed() : 0;
     }
 
     // ===== GAMEMODE METHODS =====
@@ -1879,8 +2194,8 @@ public class JSAPI {
     }
 
     // ===== INVENTORY CLICK EVENTS =====
-    private final Map<Inventory, Object> inventoryClickHandlers = new HashMap<>();
-    private final Map<Inventory, Object> inventoryCloseHandlers = new HashMap<>();
+    private final Map<Inventory, Object> inventoryClickHandlers = Collections.synchronizedMap(new HashMap<>());
+    private final Map<Inventory, Object> inventoryCloseHandlers = Collections.synchronizedMap(new HashMap<>());
     private static boolean inventoryClickEventRegistered = false;
     private static boolean inventoryCloseEventRegistered = false;
 
@@ -1954,9 +2269,27 @@ public class JSAPI {
     
     /**
      * Handle inventory click for all registered inventories
+     * Improved version with proper top/bottom inventory handling, shift-click, drag support
      */
     public static void handleInventoryClickForAll(InventoryClickEvent event) {
-        Inventory inv = event.getInventory();
+        Inventory clickedInv = event.getClickedInventory();
+        Inventory topInv = event.getInventory();
+        
+        // Ignore clicks outside inventory
+        if (clickedInv == null) {
+            return;
+        }
+        
+        // Only handle clicks in the top inventory (GUI), not player inventory
+        // Exception: Shift-clicks from player inventory should also be handled
+        boolean isTopInventory = clickedInv.equals(topInv);
+        boolean isShiftClick = event.isShiftClick();
+        
+        // For custom inventories, we only care about top inventory clicks
+        // Shift-clicks from player inventory are handled separately
+        if (!isTopInventory && !isShiftClick) {
+            return;
+        }
         
         // Check all JSAPI instances for handlers
         synchronized (globalEventHandlers) {
@@ -1964,20 +2297,50 @@ public class JSAPI {
                 if (entry.getKey() == InventoryClickEvent.class) {
                     Map<JSAPI, List<EventHandlerInfo>> handlersMap = entry.getValue();
                     for (JSAPI api : handlersMap.keySet()) {
-                        Object handler = api.inventoryClickHandlers.get(inv);
+                        Object handler = api.inventoryClickHandlers.get(topInv);
                         
                         // Check if it's a custom inventory with slot-specific handlers
-                        if (inv.getHolder() instanceof CustomInventoryHolder) {
-                            CustomInventoryHolder holder = (CustomInventoryHolder) inv.getHolder();
+                        if (topInv.getHolder() instanceof CustomInventoryHolder) {
+                            CustomInventoryHolder holder = (CustomInventoryHolder) topInv.getHolder();
+                            
+                            // Skip if inventory is closed
+                            if (holder.isClosed()) {
+                                continue;
+                            }
+                            
                             @SuppressWarnings("unchecked")
                             Map<Integer, Object> slotHandlers = (Map<Integer, Object>) holder.getData("clickHandlers");
                             Object globalHandler = holder.getData("globalClickHandler");
+                            Object allowRemovalObj = holder.getData("allowItemRemoval");
+                            boolean allowItemRemoval = allowRemovalObj instanceof Boolean ? (Boolean) allowRemovalObj : false;
                             
+                            // Handle drag events - cancel them if item removal is not allowed
+                            if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY && !allowItemRemoval) {
+                                event.setCancelled(true);
+                                return;
+                            }
+                            
+                            // If item removal is not allowed, cancel the event by default
+                            // The handler can still call setCancelled(false) if needed
+                            if (!allowItemRemoval && isTopInventory) {
+                                // Only cancel if clicking in top inventory
+                                // Shift-clicks from player inventory are handled by the handler
+                                event.setCancelled(true);
+                            }
+                            
+                            // Handle slot-specific or global handlers
                             if (slotHandlers != null || globalHandler != null) {
                                 int slot = event.getSlot();
-                                Object slotHandler = slotHandlers != null ? slotHandlers.get(slot) : null;
                                 
-                                if (slotHandler instanceof Function && api.scope != null) {
+                                // For shift-clicks from player inventory, slot is -999
+                                // We should still call the global handler if available
+                                Object slotHandler = null;
+                                if (slot >= 0 && slotHandlers != null) {
+                                    slotHandler = slotHandlers.get(slot);
+                                }
+                                
+                                // Execute slot-specific handler first
+                                if (slotHandler instanceof Function && api.scope != null && slot >= 0) {
                                     try {
                                         org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
                                         try {
@@ -1990,10 +2353,16 @@ public class JSAPI {
                                     } catch (Exception e) {
                                         if (listenerPlugin != null) {
                                             listenerPlugin.getLogger().severe("Error in inventory click handler: " + e.getMessage());
+                                            if (listenerPlugin.getConfig().getBoolean("settings.debug-mode", false)) {
+                                                e.printStackTrace();
+                                            }
                                         }
                                     }
                                     return;
-                                } else if (globalHandler instanceof Function && api.scope != null) {
+                                }
+                                
+                                // Execute global handler if no slot-specific handler or for shift-clicks
+                                if (globalHandler instanceof Function && api.scope != null) {
                                     try {
                                         org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
                                         try {
@@ -2006,6 +2375,9 @@ public class JSAPI {
                                     } catch (Exception e) {
                                         if (listenerPlugin != null) {
                                             listenerPlugin.getLogger().severe("Error in inventory click handler: " + e.getMessage());
+                                            if (listenerPlugin.getConfig().getBoolean("settings.debug-mode", false)) {
+                                                e.printStackTrace();
+                                            }
                                         }
                                     }
                                     return;
@@ -2027,6 +2399,9 @@ public class JSAPI {
                             } catch (Exception e) {
                                 if (listenerPlugin != null) {
                                     listenerPlugin.getLogger().severe("Error in inventory click handler: " + e.getMessage());
+                                    if (listenerPlugin.getConfig().getBoolean("settings.debug-mode", false)) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
                         }
@@ -2040,6 +2415,7 @@ public class JSAPI {
     
     /**
      * Handle inventory close for all registered inventories
+     * Improved version with proper cleanup to prevent memory leaks
      */
     public static void handleInventoryCloseForAll(InventoryCloseEvent event) {
         Inventory inv = event.getInventory();
@@ -2055,6 +2431,10 @@ public class JSAPI {
                         // Check if it's a custom inventory with close handler in holder
                         if (inv.getHolder() instanceof CustomInventoryHolder) {
                             CustomInventoryHolder holder = (CustomInventoryHolder) inv.getHolder();
+                            
+                            // Mark inventory as closed
+                            holder.markClosed();
+                            
                             Object closeHandler = holder.getData("closeHandler");
                             if (closeHandler instanceof Function && api.scope != null) {
                                 try {
@@ -2069,10 +2449,25 @@ public class JSAPI {
                                 } catch (Exception e) {
                                     if (listenerPlugin != null) {
                                         listenerPlugin.getLogger().severe("Error in inventory close handler: " + e.getMessage());
+                                        if (listenerPlugin.getConfig().getBoolean("settings.debug-mode", false)) {
+                                            e.printStackTrace();
+                                        }
                                     }
                                 }
-                                return;
                             }
+                            
+                            // Cleanup: Remove handlers to prevent memory leaks
+                            // Use a delayed task to ensure cleanup happens after event processing
+                            Bukkit.getScheduler().runTaskLater(listenerPlugin, () -> {
+                                synchronized (api.inventoryClickHandlers) {
+                                    api.inventoryClickHandlers.remove(inv);
+                                }
+                                synchronized (api.inventoryCloseHandlers) {
+                                    api.inventoryCloseHandlers.remove(inv);
+                                }
+                            }, 1L);
+                            
+                            return;
                         }
                         
                         // Fallback to regular handler
@@ -2089,9 +2484,23 @@ public class JSAPI {
                             } catch (Exception e) {
                                 if (listenerPlugin != null) {
                                     listenerPlugin.getLogger().severe("Error in inventory close handler: " + e.getMessage());
+                                    if (listenerPlugin.getConfig().getBoolean("settings.debug-mode", false)) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
                         }
+                        
+                        // Cleanup regular handlers too
+                        Bukkit.getScheduler().runTaskLater(listenerPlugin, () -> {
+                            synchronized (api.inventoryClickHandlers) {
+                                api.inventoryClickHandlers.remove(inv);
+                            }
+                            synchronized (api.inventoryCloseHandlers) {
+                                api.inventoryCloseHandlers.remove(inv);
+                            }
+                        }, 1L);
+                        
                         break; // Only process once
                     }
                     break;
@@ -2306,11 +2715,10 @@ public class JSAPI {
 
     // ===== ADVANCED INVENTORY METHODS =====
     public void setInventoryItem(Inventory inventory, int slot, ItemStack item) {
+        if (inventory == null || slot < 0 || slot >= inventory.getSize()) {
+            return;
+        }
         inventory.setItem(slot, item);
-    }
-
-    public ItemStack getInventoryItem(Inventory inventory, int slot) {
-        return inventory.getItem(slot);
     }
 
     public void fillInventory(Inventory inventory, ItemStack item) {
@@ -2345,6 +2753,7 @@ public class JSAPI {
         private Object closeHandler = null;
         private ItemStack backgroundItem = null;
         private Inventory inventory = null;
+        private boolean allowItemRemoval = false; // Default: items cannot be removed from GUI
         
         public InventoryGUI(String title, int rows) {
             this.title = title;
@@ -2444,12 +2853,24 @@ public class JSAPI {
         }
         
         /**
+         * Set whether items can be removed from the GUI
+         * @param allow true to allow item removal, false to prevent it (default: false)
+         */
+        public InventoryGUI setAllowItemRemoval(boolean allow) {
+            this.allowItemRemoval = allow;
+            return this;
+        }
+        
+        /**
          * Build and return the inventory
          */
         public Inventory build() {
             CustomInventoryHolder holder = new CustomInventoryHolder();
             inventory = Bukkit.createInventory(holder, size, ChatColor.translateAlternateColorCodes('&', title));
             holder.setInventory(inventory);
+            
+            // Create a copy of items map for storage in holder (for refresh functionality)
+            Map<Integer, ItemStack> itemsCopy = new HashMap<>(items);
             
             // Set all items
             for (Map.Entry<Integer, ItemStack> entry : items.entrySet()) {
@@ -2461,14 +2882,21 @@ public class JSAPI {
                 for (int i = 0; i < size; i++) {
                     if (inventory.getItem(i) == null) {
                         inventory.setItem(i, backgroundItem);
+                        // Also add to itemsCopy for refresh
+                        itemsCopy.put(i, backgroundItem.clone());
                     }
                 }
             }
             
-            // Store handlers in holder for later use
-            holder.setData("clickHandlers", clickHandlers);
+            // Store handlers and data in holder for later use
+            holder.setData("clickHandlers", new HashMap<>(clickHandlers)); // Copy for thread safety
             holder.setData("globalClickHandler", globalClickHandler);
             holder.setData("closeHandler", closeHandler);
+            holder.setData("allowItemRemoval", allowItemRemoval);
+            holder.setData("items", itemsCopy); // Store items for refresh
+            holder.setData("backgroundItem", backgroundItem != null ? backgroundItem.clone() : null);
+            holder.setData("title", title);
+            holder.setData("size", size);
             
             // Register click handlers (actual handling is done in handleInventoryClick)
             if (!clickHandlers.isEmpty() || globalClickHandler != null) {
@@ -2537,27 +2965,175 @@ public class JSAPI {
         }
         return null;
     }
+    
+    /**
+     * Update an item in a custom inventory (thread-safe)
+     */
+    public boolean updateInventoryItem(Inventory inventory, int slot, ItemStack item) {
+        if (inventory == null || slot < 0 || slot >= inventory.getSize()) {
+            return false;
+        }
+        
+        CustomInventoryHolder holder = getInventoryHolder(inventory);
+        if (holder != null && holder.isClosed()) {
+            return false;
+        }
+        
+        inventory.setItem(slot, item);
+        return true;
+    }
+    
+    /**
+     * Get an item from a custom inventory
+     */
+    public ItemStack getInventoryItem(Inventory inventory, int slot) {
+        if (inventory == null || slot < 0 || slot >= inventory.getSize()) {
+            return null;
+        }
+        return inventory.getItem(slot);
+    }
+    
+    /**
+     * Clear all items from a custom inventory
+     */
+    public void clearInventory(Inventory inventory) {
+        if (inventory == null) {
+            return;
+        }
+        
+        CustomInventoryHolder holder = getInventoryHolder(inventory);
+        if (holder != null && holder.isClosed()) {
+            return;
+        }
+        
+        inventory.clear();
+    }
+    
+    /**
+     * Refresh/rebuild a custom inventory (reapplies items from holder)
+     */
+    public boolean refreshInventory(Inventory inventory) {
+        if (inventory == null) {
+            return false;
+        }
+        
+        CustomInventoryHolder holder = getInventoryHolder(inventory);
+        if (holder == null || holder.isClosed()) {
+            return false;
+        }
+        
+        @SuppressWarnings("unchecked")
+        Map<Integer, ItemStack> items = (Map<Integer, ItemStack>) holder.getData("items");
+        ItemStack backgroundItem = (ItemStack) holder.getData("backgroundItem");
+        
+        if (items != null) {
+            // Clear first
+            inventory.clear();
+            
+            // Reapply items
+            for (Map.Entry<Integer, ItemStack> entry : items.entrySet()) {
+                int slot = entry.getKey();
+                if (slot >= 0 && slot < inventory.getSize()) {
+                    inventory.setItem(slot, entry.getValue());
+                }
+            }
+            
+            // Reapply background
+            if (backgroundItem != null) {
+                for (int i = 0; i < inventory.getSize(); i++) {
+                    if (inventory.getItem(i) == null) {
+                        inventory.setItem(i, backgroundItem);
+                    }
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Check if a slot in inventory is empty
+     */
+    public boolean isInventorySlotEmpty(Inventory inventory, int slot) {
+        if (inventory == null || slot < 0 || slot >= inventory.getSize()) {
+            return true;
+        }
+        ItemStack item = inventory.getItem(slot);
+        return item == null || item.getType() == Material.AIR;
+    }
+    
+    /**
+     * Get first empty slot in inventory
+     */
+    public int getFirstEmptySlot(Inventory inventory) {
+        if (inventory == null) {
+            return -1;
+        }
+        return inventory.firstEmpty();
+    }
+    
+    /**
+     * Add item to inventory (finds first empty slot)
+     */
+    public boolean addItemToInventory(Inventory inventory, ItemStack item) {
+        if (inventory == null || item == null) {
+            return false;
+        }
+        
+        CustomInventoryHolder holder = getInventoryHolder(inventory);
+        if (holder != null && holder.isClosed()) {
+            return false;
+        }
+        
+        HashMap<Integer, ItemStack> leftover = inventory.addItem(item);
+        return leftover.isEmpty();
+    }
+    
+    /**
+     * Remove item from inventory
+     */
+    public boolean removeItemFromInventory(Inventory inventory, ItemStack item) {
+        if (inventory == null || item == null) {
+            return false;
+        }
+        
+        CustomInventoryHolder holder = getInventoryHolder(inventory);
+        if (holder != null && holder.isClosed()) {
+            return false;
+        }
+        
+        return inventory.removeItem(item).isEmpty();
+    }
+    
+    /**
+     * Check if inventory contains item
+     */
+    public boolean inventoryContains(Inventory inventory, ItemStack item) {
+        if (inventory == null || item == null) {
+            return false;
+        }
+        return inventory.contains(item);
+    }
+    
+    /**
+     * Check if inventory contains at least amount of item
+     */
+    public boolean inventoryContainsAtLeast(Inventory inventory, ItemStack item, int amount) {
+        if (inventory == null || item == null || amount <= 0) {
+            return false;
+        }
+        return inventory.containsAtLeast(item, amount);
+    }
 
     // ===== PLAYER DATA METHODS =====
-    public void kickPlayer(Player player, String reason) {
-        player.kickPlayer(ChatColor.translateAlternateColorCodes('&', reason));
-    }
-
-    public void banPlayer(String playerName, String reason) {
-        Bukkit.getBanList(org.bukkit.BanList.Type.NAME).addBan(
-            playerName,
-            ChatColor.translateAlternateColorCodes('&', reason),
-            null,
-            null
-        );
-    }
-
-    public void unbanPlayer(String playerName) {
-        Bukkit.getBanList(org.bukkit.BanList.Type.NAME).pardon(playerName);
-    }
-
-    public boolean isBanned(String playerName) {
-        return Bukkit.getBanList(org.bukkit.BanList.Type.NAME).isBanned(playerName);
+    public String generateOfflineUUID(String playerName) {
+        if (playerName == null) {
+            return null;
+        }
+        // Generate a deterministic UUID based on player name
+        // This ensures consistent UUIDs for offline players
+        java.util.UUID uuid = java.util.UUID.nameUUIDFromBytes(("OfflinePlayer:" + playerName).getBytes());
+        return uuid.toString();
     }
 
     // ===== WORLD METHODS =====
@@ -2579,24 +3155,99 @@ public class JSAPI {
 
     // ===== ENTITY METHODS =====
     public void setEntityCustomName(Entity entity, String name) {
+        if (entity == null || name == null) {
+            return;
+        }
         entity.setCustomName(ChatColor.translateAlternateColorCodes('&', name));
         entity.setCustomNameVisible(true);
     }
 
     public void setEntityGlowing(Entity entity, boolean glowing) {
-        entity.setGlowing(glowing);
+        if (entity != null) {
+            entity.setGlowing(glowing);
+        }
     }
 
     public void setEntityGravity(Entity entity, boolean gravity) {
-        entity.setGravity(gravity);
+        if (entity != null) {
+            entity.setGravity(gravity);
+        }
     }
 
     public void setEntityInvulnerable(Entity entity, boolean invulnerable) {
-        entity.setInvulnerable(invulnerable);
+        if (entity != null) {
+            entity.setInvulnerable(invulnerable);
+        }
+    }
+    
+    public void setEntityAI(Entity entity, boolean ai) {
+        if (entity != null && entity instanceof LivingEntity) {
+            ((LivingEntity) entity).setAI(ai);
+        }
+    }
+    
+    public boolean hasEntityAI(Entity entity) {
+        if (entity != null && entity instanceof LivingEntity) {
+            return ((LivingEntity) entity).hasAI();
+        }
+        return false;
+    }
+    
+    public void setEntitySilent(Entity entity, boolean silent) {
+        if (entity != null) {
+            entity.setSilent(silent);
+        }
+    }
+    
+    public boolean isEntitySilent(Entity entity) {
+        return entity != null && entity.isSilent();
+    }
+    
+    public void setEntityCollidable(Entity entity, boolean collidable) {
+        if (entity != null && entity instanceof LivingEntity) {
+            // Note: setCollidable is only available for LivingEntity in some versions
+            try {
+                java.lang.reflect.Method method = entity.getClass().getMethod("setCollidable", boolean.class);
+                method.invoke(entity, collidable);
+            } catch (Exception e) {
+                // Method not available in this version
+                debug("setCollidable not available for entity type: " + entity.getType());
+            }
+        }
+    }
+    
+    public boolean isEntityCollidable(Entity entity) {
+        if (entity == null || !(entity instanceof LivingEntity)) {
+            return true; // Default
+        }
+        try {
+            java.lang.reflect.Method method = entity.getClass().getMethod("isCollidable");
+            return (Boolean) method.invoke(entity);
+        } catch (Exception e) {
+            return true; // Default if method not available
+        }
+    }
+    
+    public Location getEntityLocation(Entity entity) {
+        return entity != null ? entity.getLocation() : null;
+    }
+    
+    public void teleportEntity(Entity entity, Location location) {
+        if (entity != null && location != null) {
+            entity.teleport(location);
+        }
+    }
+    
+    public void teleportEntity(Entity entity, Entity target) {
+        if (entity != null && target != null) {
+            entity.teleport(target.getLocation());
+        }
     }
 
     public void removeEntity(Entity entity) {
-        entity.remove();
+        if (entity != null) {
+            entity.remove();
+        }
     }
 
     // ===== BLOCK METHODS =====
@@ -2715,5 +3366,112 @@ public class JSAPI {
             names.add(world.getName());
         }
         return names;
+    }
+    
+    // ===== VALIDATION METHODS =====
+    public boolean isValidPlayer(Player player) {
+        return player != null && player.isOnline();
+    }
+    
+    public boolean isValidLocation(Location location) {
+        return location != null && location.getWorld() != null;
+    }
+    
+    public boolean isValidWorld(World world) {
+        return world != null;
+    }
+    
+    public boolean isValidItemStack(ItemStack item) {
+        return item != null && item.getType() != Material.AIR;
+    }
+    
+    public boolean isValidEntity(Entity entity) {
+        return entity != null && !entity.isDead();
+    }
+    
+    public boolean isValidInventory(Inventory inventory) {
+        return inventory != null;
+    }
+    
+    // ===== PLAYER DATA METHODS =====
+    public void setPlayerMetadata(Player player, String key, Object value) {
+        if (player != null && key != null) {
+            player.setMetadata(key, new org.bukkit.metadata.FixedMetadataValue(plugin, value));
+        }
+    }
+    
+    public Object getPlayerMetadata(Player player, String key) {
+        if (player == null || key == null) {
+            return null;
+        }
+        List<org.bukkit.metadata.MetadataValue> values = player.getMetadata(key);
+        return values.isEmpty() ? null : values.get(0).value();
+    }
+    
+    public boolean hasPlayerMetadata(Player player, String key) {
+        return player != null && key != null && !player.getMetadata(key).isEmpty();
+    }
+    
+    public void removePlayerMetadata(Player player, String key) {
+        if (player != null && key != null) {
+            player.removeMetadata(key, plugin);
+        }
+    }
+    
+    // ===== BETTER ASYNC TASK MANAGEMENT =====
+    public BukkitTask runTaskAsyncSafe(Object task, Object onError) {
+        return plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                if (task instanceof Function && scope != null) {
+                    executeFunction((Function) task);
+                }
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error in async task: " + e.getMessage());
+                if (onError instanceof Function && scope != null) {
+                    try {
+                        org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
+                        try {
+                            cx.setOptimizationLevel(-1);
+                            cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+                            ((Function) onError).call(cx, scope, scope, new Object[]{e.getMessage()});
+                        } finally {
+                            org.mozilla.javascript.Context.exit();
+                        }
+                    } catch (Exception errorHandlerException) {
+                        plugin.getLogger().severe("Error in error handler: " + errorHandlerException.getMessage());
+                    }
+                } else {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+    
+    public BukkitTask runTaskSafe(Object task, Object onError) {
+        return plugin.getServer().getScheduler().runTask(plugin, () -> {
+            try {
+                if (task instanceof Function && scope != null) {
+                    executeFunction((Function) task);
+                }
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error in task: " + e.getMessage());
+                if (onError instanceof Function && scope != null) {
+                    try {
+                        org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
+                        try {
+                            cx.setOptimizationLevel(-1);
+                            cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+                            ((Function) onError).call(cx, scope, scope, new Object[]{e.getMessage()});
+                        } finally {
+                            org.mozilla.javascript.Context.exit();
+                        }
+                    } catch (Exception errorHandlerException) {
+                        plugin.getLogger().severe("Error in error handler: " + errorHandlerException.getMessage());
+                    }
+                } else {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 }
