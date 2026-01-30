@@ -768,6 +768,109 @@ public class JSAPI {
     public Inventory createInventory(InventoryHolder holder, InventoryType type, String title) {
         return Bukkit.createInventory(holder, type, ChatColor.translateAlternateColorCodes('&', title));
     }
+    
+    /**
+     * Create a custom inventory with a simple holder
+     */
+    public Inventory createCustomInventory(int size, String title) {
+        if (size % 9 != 0 || size < 9 || size > 54) {
+            plugin.getLogger().warning("Invalid inventory size: " + size + ". Must be a multiple of 9 between 9 and 54.");
+            size = Math.max(9, Math.min(54, (size / 9) * 9));
+        }
+        CustomInventoryHolder holder = new CustomInventoryHolder();
+        Inventory inv = Bukkit.createInventory(holder, size, ChatColor.translateAlternateColorCodes('&', title));
+        holder.setInventory(inv);
+        return inv;
+    }
+    
+    /**
+     * Create a custom inventory with a specific size (rows)
+     */
+    public Inventory createCustomInventory(int rows, String title, boolean useRows) {
+        if (useRows) {
+            int size = rows * 9;
+            if (size < 9 || size > 54) {
+                plugin.getLogger().warning("Invalid inventory rows: " + rows + ". Must be between 1 and 6.");
+                rows = Math.max(1, Math.min(6, rows));
+                size = rows * 9;
+            }
+            return createCustomInventory(size, title);
+        } else {
+            return createCustomInventory(rows, title);
+        }
+    }
+    
+    /**
+     * Create a custom inventory holder for advanced usage
+     */
+    public CustomInventoryHolder createInventoryHolder() {
+        return new CustomInventoryHolder();
+    }
+    
+    /**
+     * Create inventory with custom holder
+     */
+    public Inventory createInventoryWithHolder(CustomInventoryHolder holder, int size, String title) {
+        if (size % 9 != 0 || size < 9 || size > 54) {
+            plugin.getLogger().warning("Invalid inventory size: " + size + ". Must be a multiple of 9 between 9 and 54.");
+            size = Math.max(9, Math.min(54, (size / 9) * 9));
+        }
+        Inventory inv = Bukkit.createInventory(holder, size, ChatColor.translateAlternateColorCodes('&', title));
+        holder.setInventory(inv);
+        return inv;
+    }
+    
+    /**
+     * Custom Inventory Holder class for advanced inventory management
+     */
+    public static class CustomInventoryHolder implements InventoryHolder {
+        private Inventory inventory;
+        private Map<String, Object> data = new HashMap<>();
+        
+        @Override
+        public Inventory getInventory() {
+            return inventory;
+        }
+        
+        public void setInventory(Inventory inventory) {
+            this.inventory = inventory;
+        }
+        
+        /**
+         * Store custom data in the holder
+         */
+        public void setData(String key, Object value) {
+            data.put(key, value);
+        }
+        
+        /**
+         * Get custom data from the holder
+         */
+        public Object getData(String key) {
+            return data.get(key);
+        }
+        
+        /**
+         * Get all custom data
+         */
+        public Map<String, Object> getAllData() {
+            return new HashMap<>(data);
+        }
+        
+        /**
+         * Remove custom data
+         */
+        public void removeData(String key) {
+            data.remove(key);
+        }
+        
+        /**
+         * Clear all custom data
+         */
+        public void clearData() {
+            data.clear();
+        }
+    }
 
     // ===== ITEM METHODS =====
     public ItemStack createItemStack(Material material, int amount) {
@@ -1755,45 +1858,222 @@ public class JSAPI {
     // ===== INVENTORY CLICK EVENTS =====
     private final Map<Inventory, Object> inventoryClickHandlers = new HashMap<>();
     private final Map<Inventory, Object> inventoryCloseHandlers = new HashMap<>();
+    private static boolean inventoryClickEventRegistered = false;
+    private static boolean inventoryCloseEventRegistered = false;
 
     public void registerInventoryClick(Inventory inventory, Object handler) {
         inventoryClickHandlers.put(inventory, handler);
-        // Register the event if not already registered
-        registerEvent(InventoryClickEvent.class, new java.util.function.Consumer<InventoryClickEvent>() {
-            @Override
-            public void accept(InventoryClickEvent event) {
-                if (event.getInventory().equals(inventory)) {
-                    handleInventoryClick(event);
-                }
-            }
-        });
+        
+        // Register the event globally if not already registered
+        if (!inventoryClickEventRegistered) {
+            inventoryClickEventRegistered = true;
+            // Register a global handler that dispatches to the right inventory handler
+            registerEvent("inventory.InventoryClickEvent", createInventoryClickWrapper());
+        }
     }
 
     public void registerInventoryClose(Inventory inventory, Object handler) {
         inventoryCloseHandlers.put(inventory, handler);
-        // Register the event if not already registered
-        registerEvent(InventoryCloseEvent.class, new java.util.function.Consumer<InventoryCloseEvent>() {
-            @Override
-            public void accept(InventoryCloseEvent event) {
-                if (event.getInventory().equals(inventory)) {
-                    handleInventoryClose(event);
-                }
-            }
-        });
-    }
-
-    // Internal method called by event system
-    private void handleInventoryClick(InventoryClickEvent event) {
-        Object handler = inventoryClickHandlers.get(event.getInventory());
-        if (handler instanceof Function && scope != null) {
-            executeFunction((Function) handler, event);
+        
+        // Register the event globally if not already registered
+        if (!inventoryCloseEventRegistered) {
+            inventoryCloseEventRegistered = true;
+            registerEvent("inventory.InventoryCloseEvent", createInventoryCloseWrapper());
         }
     }
-
-    private void handleInventoryClose(InventoryCloseEvent event) {
-        Object handler = inventoryCloseHandlers.get(event.getInventory());
-        if (handler instanceof Function && scope != null) {
-            executeFunction((Function) handler, event);
+    
+    /**
+     * Create a wrapper function for inventory click events
+     * This will be called from the event system and dispatch to the right handlers
+     */
+    private Object createInventoryClickWrapper() {
+        // Create a JavaScript function that calls handleInventoryClickForAll
+        // We'll register it as a regular event handler that gets called by dispatchEventForAllPriorities
+        org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
+        try {
+            cx.setOptimizationLevel(-1);
+            cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+            Scriptable wrapperScope = cx.initStandardObjects();
+            
+            // Create a function that calls handleInventoryClickForAll
+            // We'll use a simple approach: create a function that checks all JSAPI instances
+            String functionCode = "function(event) { " +
+                "var JSAPI = Packages.de.flori.mCJS.JSAPI; " +
+                "JSAPI.handleInventoryClickForAll(event); " +
+                "}";
+            
+            return cx.evaluateString(wrapperScope, functionCode, "<internal>", 1, null);
+        } finally {
+            org.mozilla.javascript.Context.exit();
+        }
+    }
+    
+    /**
+     * Create a wrapper function for inventory close events
+     */
+    private Object createInventoryCloseWrapper() {
+        org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
+        try {
+            cx.setOptimizationLevel(-1);
+            cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+            Scriptable wrapperScope = cx.initStandardObjects();
+            
+            String functionCode = "function(event) { " +
+                "var JSAPI = Packages.de.flori.mCJS.JSAPI; " +
+                "JSAPI.handleInventoryCloseForAll(event); " +
+                "}";
+            
+            return cx.evaluateString(wrapperScope, functionCode, "<internal>", 1, null);
+        } finally {
+            org.mozilla.javascript.Context.exit();
+        }
+    }
+    
+    /**
+     * Handle inventory click for all registered inventories
+     */
+    public static void handleInventoryClickForAll(InventoryClickEvent event) {
+        Inventory inv = event.getInventory();
+        
+        // Check all JSAPI instances for handlers
+        synchronized (globalEventHandlers) {
+            for (Map.Entry<Class<? extends Event>, Map<JSAPI, List<EventHandlerInfo>>> entry : globalEventHandlers.entrySet()) {
+                if (entry.getKey() == InventoryClickEvent.class) {
+                    Map<JSAPI, List<EventHandlerInfo>> handlersMap = entry.getValue();
+                    for (JSAPI api : handlersMap.keySet()) {
+                        Object handler = api.inventoryClickHandlers.get(inv);
+                        
+                        // Check if it's a custom inventory with slot-specific handlers
+                        if (inv.getHolder() instanceof CustomInventoryHolder) {
+                            CustomInventoryHolder holder = (CustomInventoryHolder) inv.getHolder();
+                            @SuppressWarnings("unchecked")
+                            Map<Integer, Object> slotHandlers = (Map<Integer, Object>) holder.getData("clickHandlers");
+                            Object globalHandler = holder.getData("globalClickHandler");
+                            
+                            if (slotHandlers != null || globalHandler != null) {
+                                int slot = event.getSlot();
+                                Object slotHandler = slotHandlers != null ? slotHandlers.get(slot) : null;
+                                
+                                if (slotHandler instanceof Function && api.scope != null) {
+                                    try {
+                                        org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
+                                        try {
+                                            cx.setOptimizationLevel(-1);
+                                            cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+                                            ((Function) slotHandler).call(cx, api.scope, api.scope, new Object[]{event});
+                                        } finally {
+                                            org.mozilla.javascript.Context.exit();
+                                        }
+                                    } catch (Exception e) {
+                                        if (listenerPlugin != null) {
+                                            listenerPlugin.getLogger().severe("Error in inventory click handler: " + e.getMessage());
+                                        }
+                                    }
+                                    return;
+                                } else if (globalHandler instanceof Function && api.scope != null) {
+                                    try {
+                                        org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
+                                        try {
+                                            cx.setOptimizationLevel(-1);
+                                            cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+                                            ((Function) globalHandler).call(cx, api.scope, api.scope, new Object[]{event});
+                                        } finally {
+                                            org.mozilla.javascript.Context.exit();
+                                        }
+                                    } catch (Exception e) {
+                                        if (listenerPlugin != null) {
+                                            listenerPlugin.getLogger().severe("Error in inventory click handler: " + e.getMessage());
+                                        }
+                                    }
+                                    return;
+                                }
+                            }
+                        }
+                        
+                        // Fallback to regular handler
+                        if (handler instanceof Function && api.scope != null) {
+                            try {
+                                org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
+                                try {
+                                    cx.setOptimizationLevel(-1);
+                                    cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+                                    ((Function) handler).call(cx, api.scope, api.scope, new Object[]{event});
+                                } finally {
+                                    org.mozilla.javascript.Context.exit();
+                                }
+                            } catch (Exception e) {
+                                if (listenerPlugin != null) {
+                                    listenerPlugin.getLogger().severe("Error in inventory click handler: " + e.getMessage());
+                                }
+                            }
+                        }
+                        break; // Only process once
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Handle inventory close for all registered inventories
+     */
+    public static void handleInventoryCloseForAll(InventoryCloseEvent event) {
+        Inventory inv = event.getInventory();
+        
+        // Check all JSAPI instances for handlers
+        synchronized (globalEventHandlers) {
+            for (Map.Entry<Class<? extends Event>, Map<JSAPI, List<EventHandlerInfo>>> entry : globalEventHandlers.entrySet()) {
+                if (entry.getKey() == InventoryCloseEvent.class) {
+                    Map<JSAPI, List<EventHandlerInfo>> handlersMap = entry.getValue();
+                    for (JSAPI api : handlersMap.keySet()) {
+                        Object handler = api.inventoryCloseHandlers.get(inv);
+                        
+                        // Check if it's a custom inventory with close handler in holder
+                        if (inv.getHolder() instanceof CustomInventoryHolder) {
+                            CustomInventoryHolder holder = (CustomInventoryHolder) inv.getHolder();
+                            Object closeHandler = holder.getData("closeHandler");
+                            if (closeHandler instanceof Function && api.scope != null) {
+                                try {
+                                    org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
+                                    try {
+                                        cx.setOptimizationLevel(-1);
+                                        cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+                                        ((Function) closeHandler).call(cx, api.scope, api.scope, new Object[]{event});
+                                    } finally {
+                                        org.mozilla.javascript.Context.exit();
+                                    }
+                                } catch (Exception e) {
+                                    if (listenerPlugin != null) {
+                                        listenerPlugin.getLogger().severe("Error in inventory close handler: " + e.getMessage());
+                                    }
+                                }
+                                return;
+                            }
+                        }
+                        
+                        // Fallback to regular handler
+                        if (handler instanceof Function && api.scope != null) {
+                            try {
+                                org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
+                                try {
+                                    cx.setOptimizationLevel(-1);
+                                    cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+                                    ((Function) handler).call(cx, api.scope, api.scope, new Object[]{event});
+                                } finally {
+                                    org.mozilla.javascript.Context.exit();
+                                }
+                            } catch (Exception e) {
+                                if (listenerPlugin != null) {
+                                    listenerPlugin.getLogger().severe("Error in inventory close handler: " + e.getMessage());
+                                }
+                            }
+                        }
+                        break; // Only process once
+                    }
+                    break;
+                }
+            }
         }
     }
 
@@ -2020,6 +2300,219 @@ public class JSAPI {
         for (int i = start; i <= end && i < inventory.getSize(); i++) {
             inventory.setItem(i, item);
         }
+    }
+    
+    /**
+     * Create a GUI builder pattern for easier inventory creation
+     */
+    public InventoryGUI createGUI(String title, int rows) {
+        return new InventoryGUI(title, rows);
+    }
+    
+    /**
+     * GUI Builder class for creating custom inventories easily
+     */
+    public class InventoryGUI {
+        private String title;
+        private int rows;
+        private int size;
+        private Map<Integer, ItemStack> items = new HashMap<>();
+        private Map<Integer, Object> clickHandlers = new HashMap<>();
+        private Object globalClickHandler = null;
+        private Object closeHandler = null;
+        private ItemStack backgroundItem = null;
+        private Inventory inventory = null;
+        
+        public InventoryGUI(String title, int rows) {
+            this.title = title;
+            this.rows = Math.max(1, Math.min(6, rows));
+            this.size = this.rows * 9;
+        }
+        
+        /**
+         * Set an item at a specific slot
+         */
+        public InventoryGUI setItem(int slot, ItemStack item) {
+            if (slot >= 0 && slot < size) {
+                items.put(slot, item);
+            }
+            return this;
+        }
+        
+        /**
+         * Set an item at a specific slot with click handler
+         */
+        public InventoryGUI setItem(int slot, ItemStack item, Object clickHandler) {
+            setItem(slot, item);
+            if (clickHandler != null) {
+                clickHandlers.put(slot, clickHandler);
+            }
+            return this;
+        }
+        
+        /**
+         * Set items in a range
+         */
+        public InventoryGUI setItems(int startSlot, int endSlot, ItemStack item) {
+            for (int i = startSlot; i <= endSlot && i < size; i++) {
+                items.put(i, item);
+            }
+            return this;
+        }
+        
+        /**
+         * Fill entire inventory with an item
+         */
+        public InventoryGUI fill(ItemStack item) {
+            backgroundItem = item;
+            for (int i = 0; i < size; i++) {
+                if (!items.containsKey(i)) {
+                    items.put(i, item);
+                }
+            }
+            return this;
+        }
+        
+        /**
+         * Fill borders with an item
+         */
+        public InventoryGUI fillBorders(ItemStack item) {
+            // Top row
+            for (int i = 0; i < 9; i++) {
+                items.put(i, item);
+            }
+            // Bottom row
+            for (int i = size - 9; i < size; i++) {
+                items.put(i, item);
+            }
+            // Left column
+            for (int i = 0; i < size; i += 9) {
+                items.put(i, item);
+            }
+            // Right column
+            for (int i = 8; i < size; i += 9) {
+                items.put(i, item);
+            }
+            return this;
+        }
+        
+        /**
+         * Set background item (used for empty slots)
+         */
+        public InventoryGUI setBackground(ItemStack item) {
+            this.backgroundItem = item;
+            return this;
+        }
+        
+        /**
+         * Set global click handler (called for all clicks)
+         */
+        public InventoryGUI onClick(Object handler) {
+            this.globalClickHandler = handler;
+            return this;
+        }
+        
+        /**
+         * Set close handler
+         */
+        public InventoryGUI onClose(Object handler) {
+            this.closeHandler = handler;
+            return this;
+        }
+        
+        /**
+         * Build and return the inventory
+         */
+        public Inventory build() {
+            CustomInventoryHolder holder = new CustomInventoryHolder();
+            inventory = Bukkit.createInventory(holder, size, ChatColor.translateAlternateColorCodes('&', title));
+            holder.setInventory(inventory);
+            
+            // Set all items
+            for (Map.Entry<Integer, ItemStack> entry : items.entrySet()) {
+                inventory.setItem(entry.getKey(), entry.getValue());
+            }
+            
+            // Fill empty slots with background if set
+            if (backgroundItem != null) {
+                for (int i = 0; i < size; i++) {
+                    if (inventory.getItem(i) == null) {
+                        inventory.setItem(i, backgroundItem);
+                    }
+                }
+            }
+            
+            // Store handlers in holder for later use
+            holder.setData("clickHandlers", clickHandlers);
+            holder.setData("globalClickHandler", globalClickHandler);
+            holder.setData("closeHandler", closeHandler);
+            
+            // Register click handlers (actual handling is done in handleInventoryClick)
+            if (!clickHandlers.isEmpty() || globalClickHandler != null) {
+                // Register with a dummy handler - the actual handling happens in handleInventoryClick
+                // which checks the CustomInventoryHolder for slot-specific handlers
+                registerInventoryClick(inventory, null); // null is fine, handleInventoryClick will check holder
+            }
+            
+            // Register close handler
+            if (closeHandler != null) {
+                registerInventoryClose(inventory, closeHandler);
+            }
+            
+            return inventory;
+        }
+        
+        /**
+         * Build and open for a player
+         */
+        public Inventory buildAndOpen(Player player) {
+            Inventory inv = build();
+            player.openInventory(inv);
+            return inv;
+        }
+    }
+    
+    /**
+     * Get the holder of an inventory (if it's a CustomInventoryHolder)
+     */
+    public CustomInventoryHolder getInventoryHolder(Inventory inventory) {
+        InventoryHolder holder = inventory.getHolder();
+        if (holder instanceof CustomInventoryHolder) {
+            return (CustomInventoryHolder) holder;
+        }
+        return null;
+    }
+    
+    /**
+     * Check if inventory has a custom holder
+     */
+    public boolean isCustomInventory(Inventory inventory) {
+        return inventory.getHolder() instanceof CustomInventoryHolder;
+    }
+    
+    /**
+     * Get click handler for a specific slot from a custom inventory
+     */
+    public Object getSlotClickHandler(Inventory inventory, int slot) {
+        CustomInventoryHolder holder = getInventoryHolder(inventory);
+        if (holder != null) {
+            Map<Integer, Object> handlers = (Map<Integer, Object>) holder.getData("clickHandlers");
+            if (handlers != null) {
+                return handlers.get(slot);
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Get global click handler from a custom inventory
+     */
+    public Object getGlobalClickHandler(Inventory inventory) {
+        CustomInventoryHolder holder = getInventoryHolder(inventory);
+        if (holder != null) {
+            return holder.getData("globalClickHandler");
+        }
+        return null;
     }
 
     // ===== PLAYER DATA METHODS =====

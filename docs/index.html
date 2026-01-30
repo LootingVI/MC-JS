@@ -918,7 +918,62 @@ api.giveExp(player, 100);</code></pre>
 var inv = api.createInventory(null, 27, "&6My Custom GUI");
 
 // Create inventory by type
-var chest = api.createInventory(null, InventoryType.CHEST, "&bChest Menu");</code></pre>
+var chest = api.createInventory(null, InventoryType.CHEST, "&bChest Menu");
+
+// Create custom inventory (simplified, no holder needed)
+var customInv = api.createCustomInventory(27, "&6Custom GUI");
+
+// Create custom inventory with rows (1-6 rows)
+var gui = api.createCustomInventory(3, "&bMy Menu", true); // 3 rows = 27 slots</code></pre>
+                        </div>
+                        
+                        <div class="card">
+                            <h4>GUI Builder Pattern (Recommended)</h4>
+                            <pre><code class="language-javascript">// Create a GUI builder for easy inventory creation
+var gui = api.createGUI("&6My Custom Menu", 3); // 3 rows
+
+// Set items with slot-specific click handlers
+var item1 = api.createItemStack(api.getMaterial("DIAMOND"), 1);
+item1 = api.setItemDisplayName(item1, "&bDiamond Option");
+gui.setItem(10, item1, function(event) {
+    event.setCancelled(true);
+    api.sendMessage(event.getWhoClicked(), "&aYou clicked the diamond!");
+});
+
+var item2 = api.createItemStack(api.getMaterial("EMERALD"), 1);
+item2 = api.setItemDisplayName(item2, "&aEmerald Option");
+gui.setItem(16, item2, function(event) {
+    event.setCancelled(true);
+    api.sendMessage(event.getWhoClicked(), "&aYou clicked the emerald!");
+});
+
+// Fill borders with background item
+var background = api.createItemStack(api.getMaterial("GRAY_STAINED_GLASS_PANE"), 1);
+background = api.setItemDisplayName(background, " ");
+gui.fillBorders(background);
+
+// Set background for empty slots
+gui.setBackground(background);
+
+// Global click handler (called for all clicks)
+gui.onClick(function(event) {
+    // This runs for every click, even if slot has specific handler
+    var slot = event.getSlot();
+    // Do something...
+});
+
+// Close handler
+gui.onClose(function(event) {
+    var player = event.getPlayer();
+    api.sendMessage(player, "&7You closed the menu");
+});
+
+// Build and open for player
+var inventory = gui.buildAndOpen(player);
+
+// Or build without opening
+var inv = gui.build();
+player.openInventory(inv);</code></pre>
                         </div>
 
                         <div class="card">
@@ -971,6 +1026,35 @@ api.registerInventoryClose(inv, function(event) {
     var player = event.getPlayer();
     api.sendMessage(player, "&7You closed the inventory");
 });</code></pre>
+                        </div>
+                        
+                        <div class="card">
+                            <h4>Custom Inventory Holder</h4>
+                            <pre><code class="language-javascript">// Create a custom inventory holder for advanced usage
+var holder = api.createInventoryHolder();
+
+// Store custom data in the holder
+holder.setData("menuType", "shop");
+holder.setData("player", player);
+
+// Create inventory with custom holder
+var inv = api.createInventoryWithHolder(holder, 27, "&6Shop Menu");
+
+// Get holder from inventory
+var invHolder = api.getInventoryHolder(inv);
+if (invHolder) {
+    var menuType = invHolder.getData("menuType");
+    var storedPlayer = invHolder.getData("player");
+}
+
+// Check if inventory has custom holder
+if (api.isCustomInventory(inv)) {
+    // This is a custom inventory
+}
+
+// Get handlers from custom inventory
+var slotHandler = api.getSlotClickHandler(inv, 10);
+var globalHandler = api.getGlobalClickHandler(inv);</code></pre>
                         </div>
                     </div>
 
@@ -1359,7 +1443,7 @@ this.pluginInfo = pluginInfo;</code></pre>
                     </div>
 
                     <div class="card">
-                        <h3>Example 3: Custom GUI Menu</h3>
+                        <h3>Example 3: Custom GUI Menu (Old Method)</h3>
                         <pre><code class="language-javascript">var pluginInfo = {
     name: "Menu Plugin",
     version: "1.0.0"
@@ -1409,6 +1493,99 @@ function onEnable() {
         });
         
         player.openInventory(inv);
+        return true;
+    });
+}
+
+this.onEnable = onEnable;
+this.pluginInfo = pluginInfo;</code></pre>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>Example 4: GUI Builder Pattern (Recommended)</h3>
+                        <pre><code class="language-javascript">var pluginInfo = {
+    name: "Shop Plugin",
+    version: "1.0.0"
+};
+
+function onEnable() {
+    api.registerCommand("shop", "Open shop", "/shop", function(sender, args) {
+        if (!(sender instanceof Player)) {
+            api.sendMessage(sender, "&cOnly players can use this command!");
+            return false;
+        }
+        
+        var player = sender;
+        
+        // Create GUI with builder pattern
+        var gui = api.createGUI("&6&lShop Menu", 3);
+        
+        // Background item
+        var bg = api.createItemStack(api.getMaterial("GRAY_STAINED_GLASS_PANE"), 1);
+        bg = api.setItemDisplayName(bg, " ");
+        gui.fillBorders(bg);
+        gui.setBackground(bg);
+        
+        // Shop item 1 - Diamond Sword
+        var sword = api.createItemStack(api.getMaterial("DIAMOND_SWORD"), 1);
+        sword = api.setItemDisplayName(sword, "&bDiamond Sword");
+        sword = api.setItemLore(sword, [
+            "&7Price: &a100 Coins",
+            "&7Click to purchase!"
+        ]);
+        gui.setItem(10, sword, function(event) {
+            event.setCancelled(true);
+            api.sendMessage(player, "&aYou purchased a Diamond Sword!");
+            api.giveItem(player, sword);
+        });
+        
+        // Shop item 2 - Golden Apple
+        var apple = api.createItemStack(api.getMaterial("GOLDEN_APPLE"), 1);
+        apple = api.setItemDisplayName(apple, "&eGolden Apple");
+        apple = api.setItemLore(apple, [
+            "&7Price: &a50 Coins",
+            "&7Click to purchase!"
+        ]);
+        gui.setItem(13, apple, function(event) {
+            event.setCancelled(true);
+            api.sendMessage(player, "&aYou purchased a Golden Apple!");
+            api.giveItem(player, apple);
+        });
+        
+        // Shop item 3 - Enchanted Book
+        var book = api.createItemStack(api.getMaterial("ENCHANTED_BOOK"), 1);
+        book = api.setItemDisplayName(book, "&dEnchanted Book");
+        book = api.setItemLore(book, [
+            "&7Price: &a200 Coins",
+            "&7Click to purchase!"
+        ]);
+        gui.setItem(16, book, function(event) {
+            event.setCancelled(true);
+            api.sendMessage(player, "&aYou purchased an Enchanted Book!");
+            api.giveItem(player, book);
+        });
+        
+        // Close button
+        var close = api.createItemStack(api.getMaterial("BARRIER"), 1);
+        close = api.setItemDisplayName(close, "&cClose Shop");
+        gui.setItem(22, close, function(event) {
+            event.setCancelled(true);
+            player.closeInventory();
+        });
+        
+        // Global click handler (optional)
+        gui.onClick(function(event) {
+            // Log all clicks for debugging
+            // api.sendMessage(player, "&7Debug: Clicked slot " + event.getSlot());
+        });
+        
+        // Close handler
+        gui.onClose(function(event) {
+            api.sendMessage(player, "&7Shop closed. Come back soon!");
+        });
+        
+        // Build and open
+        gui.buildAndOpen(player);
         return true;
     });
 }
@@ -1604,6 +1781,8 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.registerEvent(eventClass, handler, priority)</code></td><td>Register event with priority</td></tr>
                             <tr><td><code>api.registerInventoryClick(inv, handler)</code></td><td>Register inventory click handler</td></tr>
                             <tr><td><code>api.registerInventoryClose(inv, handler)</code></td><td>Register inventory close handler</td></tr>
+                            <tr><td><code>api.createCustomInventory(size, title)</code></td><td>Create custom inventory</td></tr>
+                            <tr><td><code>api.createGUI(title, rows)</code></td><td>Create GUI builder</td></tr>
                         </table>
 
                         <h4>Task Methods</h4>
@@ -1645,6 +1824,46 @@ this.pluginInfo = pluginInfo;</code></pre>
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.createInventory(holder, size, title)</code></td><td>Create inventory</td></tr>
+                            <tr><td><code>api.createCustomInventory(size, title)</code></td><td>Create custom inventory (simplified)</td></tr>
+                            <tr><td><code>api.createCustomInventory(rows, title, useRows)</code></td><td>Create custom inventory by rows</td></tr>
+                            <tr><td><code>api.createGUI(title, rows)</code></td><td>Create GUI builder (recommended)</td></tr>
+                            <tr><td><code>api.createInventoryHolder()</code></td><td>Create custom inventory holder</td></tr>
+                            <tr><td><code>api.createInventoryWithHolder(holder, size, title)</code></td><td>Create inventory with custom holder</td></tr>
+                            <tr><td><code>api.getInventoryHolder(inv)</code></td><td>Get holder from inventory</td></tr>
+                            <tr><td><code>api.isCustomInventory(inv)</code></td><td>Check if custom inventory</td></tr>
+                            <tr><td><code>api.getSlotClickHandler(inv, slot)</code></td><td>Get slot-specific click handler</td></tr>
+                            <tr><td><code>api.getGlobalClickHandler(inv)</code></td><td>Get global click handler</td></tr>
+                            <tr><td><code>api.setInventoryItem(inv, slot, item)</code></td><td>Set item in slot</td></tr>
+                        </table>
+                        
+                        <h4>GUI Builder Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>gui.setItem(slot, item)</code></td><td>Set item at slot</td></tr>
+                            <tr><td><code>gui.setItem(slot, item, handler)</code></td><td>Set item with click handler</td></tr>
+                            <tr><td><code>gui.setItems(startSlot, endSlot, item)</code></td><td>Set items in range</td></tr>
+                            <tr><td><code>gui.fill(item)</code></td><td>Fill entire inventory</td></tr>
+                            <tr><td><code>gui.fillBorders(item)</code></td><td>Fill borders only</td></tr>
+                            <tr><td><code>gui.setBackground(item)</code></td><td>Set background for empty slots</td></tr>
+                            <tr><td><code>gui.onClick(handler)</code></td><td>Set global click handler</td></tr>
+                            <tr><td><code>gui.onClose(handler)</code></td><td>Set close handler</td></tr>
+                            <tr><td><code>gui.build()</code></td><td>Build and return inventory</td></tr>
+                            <tr><td><code>gui.buildAndOpen(player)</code></td><td>Build and open for player</td></tr>
+                        </table>
+                        
+                        <h4>Custom Inventory Holder Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>holder.setData(key, value)</code></td><td>Store custom data</td></tr>
+                            <tr><td><code>holder.getData(key)</code></td><td>Get custom data</td></tr>
+                            <tr><td><code>holder.getAllData()</code></td><td>Get all custom data</td></tr>
+                            <tr><td><code>holder.removeData(key)</code></td><td>Remove custom data</td></tr>
+                            <tr><td><code>holder.clearData()</code></td><td>Clear all custom data</td></tr>
+                        </table>
+                        
+                        <h4>Item Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.setInventoryItem(inv, slot, item)</code></td><td>Set item in slot</td></tr>
                             <tr><td><code>api.getInventoryItem(inv, slot)</code></td><td>Get item from slot</td></tr>
                             <tr><td><code>api.fillInventory(inv, item)</code></td><td>Fill entire inventory</td></tr>
@@ -1655,6 +1874,31 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.giveItem(player, item)</code></td><td>Give item to player</td></tr>
                             <tr><td><code>api.getItemInMainHand(player)</code></td><td>Get item in main hand</td></tr>
                             <tr><td><code>api.clearInventory(player)</code></td><td>Clear player inventory</td></tr>
+                        </table>
+                        
+                        <h4>GUI Builder Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>gui.setItem(slot, item)</code></td><td>Set item at slot</td></tr>
+                            <tr><td><code>gui.setItem(slot, item, handler)</code></td><td>Set item with click handler</td></tr>
+                            <tr><td><code>gui.setItems(startSlot, endSlot, item)</code></td><td>Set items in range</td></tr>
+                            <tr><td><code>gui.fill(item)</code></td><td>Fill entire inventory</td></tr>
+                            <tr><td><code>gui.fillBorders(item)</code></td><td>Fill borders only</td></tr>
+                            <tr><td><code>gui.setBackground(item)</code></td><td>Set background for empty slots</td></tr>
+                            <tr><td><code>gui.onClick(handler)</code></td><td>Set global click handler</td></tr>
+                            <tr><td><code>gui.onClose(handler)</code></td><td>Set close handler</td></tr>
+                            <tr><td><code>gui.build()</code></td><td>Build and return inventory</td></tr>
+                            <tr><td><code>gui.buildAndOpen(player)</code></td><td>Build and open for player</td></tr>
+                        </table>
+                        
+                        <h4>Custom Inventory Holder Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>holder.setData(key, value)</code></td><td>Store custom data</td></tr>
+                            <tr><td><code>holder.getData(key)</code></td><td>Get custom data</td></tr>
+                            <tr><td><code>holder.getAllData()</code></td><td>Get all custom data</td></tr>
+                            <tr><td><code>holder.removeData(key)</code></td><td>Remove custom data</td></tr>
+                            <tr><td><code>holder.clearData()</code></td><td>Clear all custom data</td></tr>
                         </table>
 
                         <h4>Database Methods</h4>
