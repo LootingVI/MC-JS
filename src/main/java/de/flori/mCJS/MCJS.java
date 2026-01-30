@@ -137,6 +137,13 @@ public final class MCJS extends JavaPlugin {
                 ChatColor.WHITE + getConfig().getBoolean("settings.auto-reload", false));
             sender.sendMessage(ChatColor.YELLOW + "Disabled plugins: " + 
                 ChatColor.WHITE + getConfig().getStringList("plugins.disabled-plugins").toString());
+            sender.sendMessage(ChatColor.YELLOW + "Load order: " + 
+                ChatColor.WHITE + (getConfig().getStringList("plugins.load-order").isEmpty() ? "none" : 
+                getConfig().getStringList("plugins.load-order").toString()));
+            sender.sendMessage(ChatColor.YELLOW + "Max execution time: " + 
+                ChatColor.WHITE + getConfig().getLong("performance.max-execution-time", 5000) + "ms");
+            sender.sendMessage(ChatColor.YELLOW + "Restrict file access: " + 
+                ChatColor.WHITE + getConfig().getBoolean("security.restrict-file-access", false));
             sender.sendMessage(ChatColor.GRAY + "Use /jsconfig reload to reload the config file");
             return true;
         }

@@ -31,6 +31,42 @@ public class JSAPI {
     public JSAPI(JavaPlugin plugin) {
         this.plugin = plugin;
     }
+    
+    /**
+     * Check if debug mode is enabled in config
+     */
+    private boolean isDebugMode() {
+        return plugin.getConfig().getBoolean("settings.debug-mode", false);
+    }
+    
+    /**
+     * Debug logging helper
+     */
+    private void debug(String message) {
+        if (isDebugMode()) {
+            plugin.getLogger().info("[DEBUG] " + message);
+        }
+    }
+    
+    /**
+     * Execute a runnable with timeout protection
+     */
+    private void executeWithTimeout(Runnable task, long timeoutMs, String context) {
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        java.util.concurrent.Future<?> future = executor.submit(task);
+        try {
+            future.get(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (java.util.concurrent.TimeoutException e) {
+            future.cancel(true);
+            plugin.getLogger().warning("Event handler execution timed out after " + timeoutMs + "ms for " + context);
+            debug("Timeout occurred for: " + context);
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error executing timed task for " + context + ": " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            executor.shutdown();
+        }
+    }
 
     // Internal method to set Rhino scope (called by JSPluginManager)
     // Note: Context is thread-local, so we create a new one for each callback
@@ -58,6 +94,7 @@ public class JSAPI {
 
     // ===== COMMAND REGISTRATION =====
     public void registerCommand(String name, String description, String usage, Object executor) {
+        debug("Registering command: " + name + " (with description and usage)");
         registerCommand(name, description, usage, executor, null);
     }
 
@@ -153,6 +190,7 @@ public class JSAPI {
     }
 
     public void registerCommand(String name, Object executor) {
+        debug("Registering simple command: " + name);
         registerCommand(name, "", "/" + name, executor, null);
     }
 
@@ -225,6 +263,7 @@ public class JSAPI {
 
     // ===== EVENT REGISTRATION =====
     public void registerEvent(String eventClassName, Object handler) {
+        debug("Registering event: " + eventClassName);
         try {
             Class<?> eventClass = null;
             
@@ -328,6 +367,7 @@ public class JSAPI {
                 
                 // Log the resolved event class for debugging
                 plugin.getLogger().info("Registering event: " + eventClassName + " -> " + clazz.getName());
+                debug("Resolved event class: " + clazz.getName() + " for " + eventClassName);
                 
                 registerEvent(clazz, handler);
             } else {
@@ -488,6 +528,11 @@ public class JSAPI {
     private static void dispatchEventForAllPriorities(Event event) {
         Class<? extends Event> actualEventClass = event.getClass();
         
+        // Debug logging (only if any JSAPI instance has debug mode enabled)
+        if (listenerPlugin != null && listenerPlugin.getConfig().getBoolean("settings.debug-mode", false)) {
+            listenerPlugin.getLogger().info("[DEBUG] Dispatching event: " + actualEventClass.getSimpleName());
+        }
+        
         // Check all registered event classes to see if they match
         synchronized (globalEventHandlers) {
             for (Map.Entry<Class<? extends Event>, Map<JSAPI, List<EventHandlerInfo>>> entry : globalEventHandlers.entrySet()) {
@@ -505,20 +550,56 @@ public class JSAPI {
                         for (EventHandlerInfo info : handlers) {
                             if (info.handler instanceof Function && api.scope != null) {
                                 try {
-                                    org.mozilla.javascript.Context rhinoContext = org.mozilla.javascript.Context.enter();
-                                    try {
-                                        int optimizationLevel = listenerPlugin != null ? 
-                                            listenerPlugin.getConfig().getInt("performance.optimization-level", -1) : -1;
-                                        rhinoContext.setOptimizationLevel(optimizationLevel);
-                                        rhinoContext.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
-                                        Function func = (Function) info.handler;
-                                        func.call(rhinoContext, api.scope, api.scope, new Object[]{event});
-                                    } finally {
-                                        org.mozilla.javascript.Context.exit();
+                                    if (listenerPlugin != null && listenerPlugin.getConfig().getBoolean("settings.debug-mode", false)) {
+                                        listenerPlugin.getLogger().info("[DEBUG] Executing event handler for " + actualEventClass.getSimpleName() + 
+                                                                      " (priority: " + info.priority + ")");
+                                    }
+                                    
+                                    // Get max execution time from config
+                                    long maxExecutionTime = listenerPlugin != null ? 
+                                        listenerPlugin.getConfig().getLong("performance.max-execution-time", 5000) : 5000;
+                                    
+                                    // Execute with timeout if configured
+                                    if (maxExecutionTime > 0) {
+                                        api.executeWithTimeout(() -> {
+                                            org.mozilla.javascript.Context rhinoContext = org.mozilla.javascript.Context.enter();
+                                            try {
+                                                int optimizationLevel = listenerPlugin != null ? 
+                                                    listenerPlugin.getConfig().getInt("performance.optimization-level", -1) : -1;
+                                                rhinoContext.setOptimizationLevel(optimizationLevel);
+                                                rhinoContext.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+                                                Function func = (Function) info.handler;
+                                                func.call(rhinoContext, api.scope, api.scope, new Object[]{event});
+                                                if (listenerPlugin != null && listenerPlugin.getConfig().getBoolean("settings.debug-mode", false)) {
+                                                    listenerPlugin.getLogger().info("[DEBUG] Event handler execution completed");
+                                                }
+                                            } finally {
+                                                org.mozilla.javascript.Context.exit();
+                                            }
+                                        }, maxExecutionTime, actualEventClass.getSimpleName());
+                                    } else {
+                                        // No timeout
+                                        org.mozilla.javascript.Context rhinoContext = org.mozilla.javascript.Context.enter();
+                                        try {
+                                            int optimizationLevel = listenerPlugin != null ? 
+                                                listenerPlugin.getConfig().getInt("performance.optimization-level", -1) : -1;
+                                            rhinoContext.setOptimizationLevel(optimizationLevel);
+                                            rhinoContext.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+                                            Function func = (Function) info.handler;
+                                            func.call(rhinoContext, api.scope, api.scope, new Object[]{event});
+                                            if (listenerPlugin != null && listenerPlugin.getConfig().getBoolean("settings.debug-mode", false)) {
+                                                listenerPlugin.getLogger().info("[DEBUG] Event handler execution completed");
+                                            }
+                                        } finally {
+                                            org.mozilla.javascript.Context.exit();
+                                        }
                                     }
                                 } catch (Exception e) {
                                     if (listenerPlugin != null) {
                                         listenerPlugin.getLogger().severe("Error in JS event handler for " + actualEventClass.getSimpleName() + ": " + e.getMessage());
+                                        if (listenerPlugin.getConfig().getBoolean("settings.debug-mode", false)) {
+                                            listenerPlugin.getLogger().info("[DEBUG] Event handler error details: " + e.getClass().getName());
+                                        }
                                         e.printStackTrace();
                                     }
                                 }
@@ -532,9 +613,11 @@ public class JSAPI {
     
 
     public <T extends Event> void registerEvent(Class<T> eventClass, Object handler, EventPriority priority) {
+        debug("Registering event handler for " + eventClass.getName() + " with priority " + priority);
         // Check if Event is the base class (which doesn't have getHandlerList)
         if (eventClass == null || eventClass == Event.class) {
             plugin.getLogger().warning("Cannot register handler for base Event class. Use a specific event type.");
+            debug("Attempted to register base Event class, rejected");
             return;
         }
         
@@ -566,6 +649,8 @@ public class JSAPI {
             globalEventHandlers.computeIfAbsent(eventClass, k -> new HashMap<>())
                               .computeIfAbsent(this, k -> new ArrayList<>())
                               .add(new EventHandlerInfo(handler, priority));
+            debug("Stored event handler for " + eventClass.getName() + " (total handlers: " + 
+                  globalEventHandlers.get(eventClass).get(this).size() + ")");
         }
     }
 
@@ -873,10 +958,43 @@ public class JSAPI {
         plugin.saveConfig();
     }
 
+    /**
+     * Check if file access is restricted and if the path is allowed
+     */
+    private boolean isFileAccessAllowed(String filePath) {
+        boolean restrictAccess = plugin.getConfig().getBoolean("security.restrict-file-access", false);
+        if (!restrictAccess) {
+            return true; // No restrictions
+        }
+        
+        java.util.List<String> allowedPaths = plugin.getConfig().getStringList("security.allowed-paths");
+        if (allowedPaths == null || allowedPaths.isEmpty()) {
+            return false; // Restricted but no allowed paths = deny all
+        }
+        
+        String normalizedPath = filePath.replace("\\", "/");
+        for (String allowedPath : allowedPaths) {
+            String normalizedAllowed = allowedPath.replace("\\", "/");
+            if (normalizedPath.startsWith(normalizedAllowed)) {
+                return true;
+            }
+        }
+        
+        plugin.getLogger().warning("File access denied for: " + filePath + " (not in allowed paths)");
+        return false;
+    }
+    
     // ===== YAML FILE MANAGEMENT =====
     public void saveYamlFile(String fileName, Map<String, Object> data) {
         try {
             File file = new File(plugin.getDataFolder(), fileName + ".yml");
+            String filePath = file.getAbsolutePath();
+            
+            if (!isFileAccessAllowed(filePath)) {
+                plugin.getLogger().warning("Access denied: Cannot save YAML file '" + fileName + "' (security restriction)");
+                return;
+            }
+            
             org.bukkit.configuration.file.YamlConfiguration config = new org.bukkit.configuration.file.YamlConfiguration();
 
             // Convert Map to ConfigurationSection
@@ -894,6 +1012,13 @@ public class JSAPI {
     public Map<String, Object> loadYamlFile(String fileName) {
         try {
             File file = new File(plugin.getDataFolder(), fileName + ".yml");
+            String filePath = file.getAbsolutePath();
+            
+            if (!isFileAccessAllowed(filePath)) {
+                plugin.getLogger().warning("Access denied: Cannot load YAML file '" + fileName + "' (security restriction)");
+                return new HashMap<>();
+            }
+            
             if (!file.exists()) {
                 return new HashMap<>();
             }
@@ -929,6 +1054,13 @@ public class JSAPI {
     public void saveJsonFile(String fileName, String jsonContent) {
         try {
             File file = new File(plugin.getDataFolder(), fileName + ".json");
+            String filePath = file.getAbsolutePath();
+            
+            if (!isFileAccessAllowed(filePath)) {
+                plugin.getLogger().warning("Access denied: Cannot save JSON file '" + fileName + "' (security restriction)");
+                return;
+            }
+            
             java.nio.file.Files.write(file.toPath(), jsonContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         } catch (Exception e) {
             plugin.getLogger().severe("Error saving JSON file '" + fileName + "': " + e.getMessage());
@@ -939,6 +1071,13 @@ public class JSAPI {
     public String loadJsonFile(String fileName) {
         try {
             File file = new File(plugin.getDataFolder(), fileName + ".json");
+            String filePath = file.getAbsolutePath();
+            
+            if (!isFileAccessAllowed(filePath)) {
+                plugin.getLogger().warning("Access denied: Cannot load JSON file '" + fileName + "' (security restriction)");
+                return "{}";
+            }
+            
             if (!file.exists()) {
                 return "{}";
             }
@@ -967,6 +1106,13 @@ public class JSAPI {
     public void saveTextFile(String fileName, String content) {
         try {
             File file = new File(plugin.getDataFolder(), fileName + ".txt");
+            String filePath = file.getAbsolutePath();
+            
+            if (!isFileAccessAllowed(filePath)) {
+                plugin.getLogger().warning("Access denied: Cannot save text file '" + fileName + "' (security restriction)");
+                return;
+            }
+            
             java.nio.file.Files.write(file.toPath(), content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         } catch (Exception e) {
             plugin.getLogger().severe("Error saving text file '" + fileName + "': " + e.getMessage());
@@ -977,6 +1123,13 @@ public class JSAPI {
     public String loadTextFile(String fileName) {
         try {
             File file = new File(plugin.getDataFolder(), fileName + ".txt");
+            String filePath = file.getAbsolutePath();
+            
+            if (!isFileAccessAllowed(filePath)) {
+                plugin.getLogger().warning("Access denied: Cannot load text file '" + fileName + "' (security restriction)");
+                return "";
+            }
+            
             if (!file.exists()) {
                 return "";
             }

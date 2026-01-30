@@ -9,8 +9,6 @@ settings:
   # Enable debug logging for JS plugins
   debug-mode: false
   
-  # Auto-reload plugins when files change (requires file watcher)
-  auto-reload: false
 
 # Plugin Management
 plugins:

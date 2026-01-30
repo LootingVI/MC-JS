@@ -22,12 +22,30 @@ public class JSPluginManager {
         this.pluginScopes = new HashMap<>();
         this.pluginMetadata = new HashMap<>();
     }
+    
+    /**
+     * Check if debug mode is enabled in config
+     */
+    private boolean isDebugMode() {
+        return plugin.getConfig().getBoolean("settings.debug-mode", false);
+    }
+    
+    /**
+     * Debug logging helper
+     */
+    private void debug(String message) {
+        if (isDebugMode()) {
+            plugin.getLogger().info("[DEBUG] " + message);
+        }
+    }
 
     public void loadPlugins() {
+        debug("Starting plugin loading process...");
         File jsPluginsDir = new File(plugin.getDataFolder(), "js-plugins");
         if (!jsPluginsDir.exists()) {
             jsPluginsDir.mkdirs();
             plugin.getLogger().info("Created js-plugins directory: " + jsPluginsDir.getAbsolutePath());
+            debug("Created js-plugins directory: " + jsPluginsDir.getAbsolutePath());
             
             // Copy example plugin if it doesn't exist and is enabled in config
             if (isExamplePluginEnabled()) {
@@ -47,26 +65,37 @@ public class JSPluginManager {
 
         // Load plugins from directory
         plugin.getLogger().info("Scanning for JS plugins in: " + jsPluginsDir.getAbsolutePath());
+        debug("Scanning directory: " + jsPluginsDir.getAbsolutePath());
         File[] pluginFiles = jsPluginsDir.listFiles((dir, name) -> name.endsWith(".js"));
         
         if (pluginFiles == null || pluginFiles.length == 0) {
             plugin.getLogger().info("No JS plugins found in js-plugins directory");
+            debug("No .js files found in directory");
             return;
         }
 
         plugin.getLogger().info("Found " + pluginFiles.length + " JS plugin file(s)");
-        for (File pluginFile : pluginFiles) {
+        debug("Found " + pluginFiles.length + " plugin file(s) to process");
+        
+        // Sort plugins by load-order if specified
+        java.util.List<File> sortedPlugins = sortPluginsByLoadOrder(pluginFiles);
+        
+        for (File pluginFile : sortedPlugins) {
             try {
                 String pluginName = pluginFile.getName().replace(".js", "");
+                debug("Processing plugin file: " + pluginFile.getName() + " (name: " + pluginName + ")");
                 
                 // Check if plugin is disabled in config
                 if (isPluginDisabled(pluginName)) {
                     plugin.getLogger().info("Skipping disabled plugin: " + pluginFile.getName());
+                    debug("Plugin " + pluginName + " is disabled in config, skipping");
                     continue;
                 }
                 
                 plugin.getLogger().info("Loading JS plugin: " + pluginFile.getName());
+                debug("Starting load process for plugin: " + pluginName);
                 loadPlugin(pluginFile);
+                debug("Successfully loaded plugin: " + pluginName);
             } catch (Exception e) {
                 plugin.getLogger().severe("Failed to load JS plugin: " + pluginFile.getName() + " - " + e.getMessage());
                 e.printStackTrace();
@@ -76,26 +105,35 @@ public class JSPluginManager {
 
     private void loadPlugin(File pluginFile) throws IOException {
         String pluginName = pluginFile.getName().replace(".js", "");
+        debug("Reading script content from file: " + pluginFile.getAbsolutePath());
         String script = Files.readString(Path.of(pluginFile.toURI()));
 
         if (script == null || script.trim().isEmpty()) {
             plugin.getLogger().warning("Plugin file " + pluginFile.getName() + " is empty, skipping");
+            debug("Script content is empty for " + pluginName);
             return;
         }
+        
+        debug("Script size: " + script.length() + " characters");
 
         // Create a new Rhino context for this plugin (isolated execution)
+        debug("Creating Rhino context for " + pluginName);
         org.mozilla.javascript.Context rhinoContext = org.mozilla.javascript.Context.enter();
         int optimizationLevel = plugin.getConfig().getInt("performance.optimization-level", -1);
+        debug("Setting optimization level to: " + optimizationLevel);
         rhinoContext.setOptimizationLevel(optimizationLevel);
         rhinoContext.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
 
         try {
             // Create a new scope for this plugin
+            debug("Initializing standard objects for " + pluginName);
             Scriptable scope = rhinoContext.initStandardObjects();
             
             // Initialize API
+            debug("Creating JSAPI instance for " + pluginName);
             JSAPI api = new JSAPI(plugin);
             api.setRhinoScope(scope);
+            debug("Setting global properties (api, server, plugin, logger, etc.)");
             ScriptableObject.putProperty(scope, "api", org.mozilla.javascript.Context.javaToJS(api, scope));
             ScriptableObject.putProperty(scope, "server", org.mozilla.javascript.Context.javaToJS(plugin.getServer(), scope));
             ScriptableObject.putProperty(scope, "plugin", org.mozilla.javascript.Context.javaToJS(plugin, scope));
@@ -105,22 +143,31 @@ public class JSPluginManager {
             ScriptableObject.putProperty(scope, "Java", org.mozilla.javascript.Context.javaToJS(java.lang.System.class, scope));
 
             // Execute the script
+            debug("Executing script for " + pluginName);
             rhinoContext.evaluateString(scope, script, pluginFile.getName(), 1, null);
+            debug("Script execution completed for " + pluginName);
 
             // Store scope (we don't need to store context - it's thread-local and we'll create new ones as needed)
             pluginScopes.put(pluginName, scope);
 
             // Extract metadata if available
+            debug("Extracting metadata for " + pluginName);
             PluginMetadata metadata = extractMetadata(scope, pluginName);
             pluginMetadata.put(pluginName, metadata);
+            if (metadata.getVersion() != null) {
+                debug("Plugin " + pluginName + " metadata: version=" + metadata.getVersion() + 
+                      (metadata.getAuthor() != null ? ", author=" + metadata.getAuthor() : ""));
+            }
 
             // Call onEnable if it exists (BEFORE exiting the context!)
             // In Rhino, functions defined with 'function onEnable()' are available directly in scope
             // And 'this.onEnable = onEnable' also makes it available as a property
+            debug("Looking for onEnable function in " + pluginName);
             Object onEnableObj = null;
             try {
                 // Try to get the function from scope
                 onEnableObj = scope.get("onEnable", scope);
+                debug("onEnable object found: " + (onEnableObj != null ? onEnableObj.getClass().getName() : "null"));
                 
                 // If not a function, try ScriptableObject.getProperty
                 if (!(onEnableObj instanceof Function)) {
@@ -136,18 +183,24 @@ public class JSPluginManager {
             
             if (onEnableObj instanceof Function) {
                 try {
+                    debug("Calling onEnable() for " + pluginName);
                     Function onEnable = (Function) onEnableObj;
                     onEnable.call(rhinoContext, scope, scope, new Object[0]);
+                    debug("onEnable() completed successfully for " + pluginName);
                     plugin.getLogger().info("Loaded JS plugin: " + pluginName + 
                         (metadata.getVersion() != null ? " v" + metadata.getVersion() : ""));
                 } catch (Exception e) {
                     plugin.getLogger().warning("Error calling onEnable for plugin " + pluginName + ": " + e.getMessage());
+                    debug("Error in onEnable() for " + pluginName + ": " + e.getMessage());
                     e.printStackTrace();
                 }
             } else {
                 // Log what we found for debugging
                 if (onEnableObj != null) {
                     plugin.getLogger().info("onEnable found but is not a Function: " + onEnableObj.getClass().getName());
+                    debug("onEnable is not a Function for " + pluginName + ": " + onEnableObj.getClass().getName());
+                } else {
+                    debug("No onEnable function found for " + pluginName);
                 }
                 plugin.getLogger().info("Loaded JS plugin: " + pluginName + 
                     (metadata.getVersion() != null ? " v" + metadata.getVersion() : "") + " (no onEnable function found)");
@@ -197,8 +250,11 @@ public class JSPluginManager {
     }
 
     public void unloadPlugins() {
+        debug("Starting plugin unload process for " + pluginScopes.size() + " plugin(s)");
         for (Map.Entry<String, Scriptable> entry : pluginScopes.entrySet()) {
             try {
+                String pluginName = entry.getKey();
+                debug("Unloading plugin: " + pluginName);
                 Scriptable scope = entry.getValue();
                 
                 if (scope != null) {
@@ -220,11 +276,16 @@ public class JSPluginManager {
                         
                         if (onDisableObj instanceof Function) {
                             try {
+                                debug("Calling onDisable() for " + pluginName);
                                 Function onDisable = (Function) onDisableObj;
                                 onDisable.call(context, scope, scope, new Object[0]);
+                                debug("onDisable() completed for " + pluginName);
                             } catch (Exception e) {
                                 plugin.getLogger().warning("Error calling onDisable for plugin " + entry.getKey() + ": " + e.getMessage());
+                                debug("Error in onDisable() for " + pluginName + ": " + e.getMessage());
                             }
+                        } else {
+                            debug("No onDisable function found for " + pluginName);
                         }
                     } finally {
                         org.mozilla.javascript.Context.exit();
@@ -319,6 +380,42 @@ public class JSPluginManager {
      */
     private boolean isExamplePluginEnabled() {
         return plugin.getConfig().getBoolean("settings.enable-example-plugin", true);
+    }
+    
+    /**
+     * Sort plugins by load-order from config
+     */
+    private java.util.List<File> sortPluginsByLoadOrder(File[] pluginFiles) {
+        java.util.List<String> loadOrder = plugin.getConfig().getStringList("plugins.load-order");
+        
+        if (loadOrder == null || loadOrder.isEmpty()) {
+            // No load order specified, return as-is
+            return java.util.Arrays.asList(pluginFiles);
+        }
+        
+        java.util.List<File> sorted = new java.util.ArrayList<>();
+        java.util.List<File> remaining = new java.util.ArrayList<>(java.util.Arrays.asList(pluginFiles));
+        
+        // First, add plugins in the specified order
+        for (String orderedName : loadOrder) {
+            for (File file : remaining) {
+                String fileName = file.getName().replace(".js", "");
+                if (fileName.equalsIgnoreCase(orderedName)) {
+                    sorted.add(file);
+                    remaining.remove(file);
+                    break;
+                }
+            }
+        }
+        
+        // Then add remaining plugins
+        sorted.addAll(remaining);
+        
+        debug("Plugin load order: " + sorted.stream()
+            .map(f -> f.getName().replace(".js", ""))
+            .collect(java.util.stream.Collectors.joining(", ")));
+        
+        return sorted;
     }
 
     public static class PluginMetadata {
