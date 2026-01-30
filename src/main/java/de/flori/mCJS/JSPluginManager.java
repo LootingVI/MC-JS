@@ -141,6 +141,24 @@ public class JSPluginManager {
             ScriptableObject.putProperty(scope, "scheduler", org.mozilla.javascript.Context.javaToJS(plugin.getServer().getScheduler(), scope));
             ScriptableObject.putProperty(scope, "Bukkit", org.mozilla.javascript.Context.javaToJS(plugin.getServer(), scope));
             ScriptableObject.putProperty(scope, "Java", org.mozilla.javascript.Context.javaToJS(java.lang.System.class, scope));
+            
+            // Make Bukkit classes available
+            debug("Making Bukkit classes available");
+            ScriptableObject.putProperty(scope, "Player", org.mozilla.javascript.Context.javaToJS(org.bukkit.entity.Player.class, scope));
+            ScriptableObject.putProperty(scope, "Entity", org.mozilla.javascript.Context.javaToJS(org.bukkit.entity.Entity.class, scope));
+            ScriptableObject.putProperty(scope, "Material", org.mozilla.javascript.Context.javaToJS(org.bukkit.Material.class, scope));
+            ScriptableObject.putProperty(scope, "ChatColor", org.mozilla.javascript.Context.javaToJS(org.bukkit.ChatColor.class, scope));
+            ScriptableObject.putProperty(scope, "Location", org.mozilla.javascript.Context.javaToJS(org.bukkit.Location.class, scope));
+            ScriptableObject.putProperty(scope, "World", org.mozilla.javascript.Context.javaToJS(org.bukkit.World.class, scope));
+            ScriptableObject.putProperty(scope, "Block", org.mozilla.javascript.Context.javaToJS(org.bukkit.block.Block.class, scope));
+            ScriptableObject.putProperty(scope, "ItemStack", org.mozilla.javascript.Context.javaToJS(org.bukkit.inventory.ItemStack.class, scope));
+            ScriptableObject.putProperty(scope, "InventoryType", org.mozilla.javascript.Context.javaToJS(org.bukkit.event.inventory.InventoryType.class, scope));
+            ScriptableObject.putProperty(scope, "GameMode", org.mozilla.javascript.Context.javaToJS(org.bukkit.GameMode.class, scope));
+            ScriptableObject.putProperty(scope, "PotionEffectType", org.mozilla.javascript.Context.javaToJS(org.bukkit.potion.PotionEffectType.class, scope));
+            ScriptableObject.putProperty(scope, "Sound", org.mozilla.javascript.Context.javaToJS(org.bukkit.Sound.class, scope));
+            ScriptableObject.putProperty(scope, "EventPriority", org.mozilla.javascript.Context.javaToJS(org.bukkit.event.EventPriority.class, scope));
+            ScriptableObject.putProperty(scope, "CommandSender", org.mozilla.javascript.Context.javaToJS(org.bukkit.command.CommandSender.class, scope));
+            ScriptableObject.putProperty(scope, "OfflinePlayer", org.mozilla.javascript.Context.javaToJS(org.bukkit.OfflinePlayer.class, scope));
 
             // Execute the script
             debug("Executing script for " + pluginName);

@@ -529,6 +529,10 @@
                 <li><a href="#complete-api">Complete API</a></li>
                 <li><a href="#examples">Examples</a></li>
                 <li><a href="#advanced">Advanced</a></li>
+                <li><a href="#best-practices">Best Practices</a></li>
+                <li><a href="#troubleshooting">Troubleshooting</a></li>
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="#code-snippets">Code Snippets</a></li>
             </ul>
         </div>
     </nav>
@@ -569,6 +573,10 @@
                     <li><a href="#complete-api">Complete API</a></li>
                     <li><a href="#examples">Examples</a></li>
                     <li><a href="#advanced">Advanced</a></li>
+                    <li><a href="#best-practices">Best Practices</a></li>
+                    <li><a href="#troubleshooting">Troubleshooting</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                    <li><a href="#code-snippets">Code Snippets</a></li>
                 </ul>
             </aside>
 
@@ -1812,8 +1820,19 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.getHealth(player)</code></td><td>Get player health</td></tr>
                             <tr><td><code>api.getMaxHealth(player)</code></td><td>Get max health</td></tr>
                             <tr><td><code>api.setFoodLevel(player, level)</code></td><td>Set food level</td></tr>
+                            <tr><td><code>api.getFoodLevel(player)</code></td><td>Get food level</td></tr>
+                            <tr><td><code>api.setSaturation(player, saturation)</code></td><td>Set saturation</td></tr>
+                            <tr><td><code>api.getSaturation(player)</code></td><td>Get saturation</td></tr>
+                            <tr><td><code>api.damage(player, damage)</code></td><td>Damage player</td></tr>
+                            <tr><td><code>api.setExp(player, exp)</code></td><td>Set experience (0.0-1.0)</td></tr>
+                            <tr><td><code>api.getExp(player)</code></td><td>Get experience (0.0-1.0)</td></tr>
+                            <tr><td><code>api.setLevel(player, level)</code></td><td>Set level</td></tr>
+                            <tr><td><code>api.getLevel(player)</code></td><td>Get level</td></tr>
+                            <tr><td><code>api.giveExp(player, amount)</code></td><td>Give experience points</td></tr>
                             <tr><td><code>api.setGameMode(player, mode)</code></td><td>Set game mode</td></tr>
+                            <tr><td><code>api.getGameMode(player)</code></td><td>Get game mode</td></tr>
                             <tr><td><code>api.teleport(player, location)</code></td><td>Teleport player</td></tr>
+                            <tr><td><code>api.teleport(entity, location)</code></td><td>Teleport entity</td></tr>
                             <tr><td><code>api.kickPlayer(player, reason)</code></td><td>Kick player</td></tr>
                             <tr><td><code>api.banPlayer(name, reason)</code></td><td>Ban player</td></tr>
                             <tr><td><code>api.unbanPlayer(name)</code></td><td>Unban player</td></tr>
@@ -1873,32 +1892,11 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.setItemLore(item, lore)</code></td><td>Set item lore</td></tr>
                             <tr><td><code>api.giveItem(player, item)</code></td><td>Give item to player</td></tr>
                             <tr><td><code>api.getItemInMainHand(player)</code></td><td>Get item in main hand</td></tr>
-                            <tr><td><code>api.clearInventory(player)</code></td><td>Clear player inventory</td></tr>
-                        </table>
-                        
-                        <h4>GUI Builder Methods</h4>
-                        <table>
-                            <tr><th>Method</th><th>Description</th></tr>
-                            <tr><td><code>gui.setItem(slot, item)</code></td><td>Set item at slot</td></tr>
-                            <tr><td><code>gui.setItem(slot, item, handler)</code></td><td>Set item with click handler</td></tr>
-                            <tr><td><code>gui.setItems(startSlot, endSlot, item)</code></td><td>Set items in range</td></tr>
-                            <tr><td><code>gui.fill(item)</code></td><td>Fill entire inventory</td></tr>
-                            <tr><td><code>gui.fillBorders(item)</code></td><td>Fill borders only</td></tr>
-                            <tr><td><code>gui.setBackground(item)</code></td><td>Set background for empty slots</td></tr>
-                            <tr><td><code>gui.onClick(handler)</code></td><td>Set global click handler</td></tr>
-                            <tr><td><code>gui.onClose(handler)</code></td><td>Set close handler</td></tr>
-                            <tr><td><code>gui.build()</code></td><td>Build and return inventory</td></tr>
-                            <tr><td><code>gui.buildAndOpen(player)</code></td><td>Build and open for player</td></tr>
-                        </table>
-                        
-                        <h4>Custom Inventory Holder Methods</h4>
-                        <table>
-                            <tr><th>Method</th><th>Description</th></tr>
-                            <tr><td><code>holder.setData(key, value)</code></td><td>Store custom data</td></tr>
-                            <tr><td><code>holder.getData(key)</code></td><td>Get custom data</td></tr>
-                            <tr><td><code>holder.getAllData()</code></td><td>Get all custom data</td></tr>
-                            <tr><td><code>holder.removeData(key)</code></td><td>Remove custom data</td></tr>
-                            <tr><td><code>holder.clearData()</code></td><td>Clear all custom data</td></tr>
+                            <tr><td><code>api.setItemInMainHand(player, item)</code></td><td>Set item in main hand</td></tr>
+                            <tr><td><code>api.getItemInOffHand(player)</code></td><td>Get item in off hand</td></tr>
+                            <tr><td><code>api.setItemInOffHand(player, item)</code></td><td>Set item in off hand</td></tr>
+                            <tr><td><code>api.getItemMeta(item)</code></td><td>Get item meta</td></tr>
+                            <tr><td><code>api.setItemMeta(item, meta)</code></td><td>Set item meta</td></tr>
                         </table>
 
                         <h4>Database Methods</h4>
@@ -1966,15 +1964,22 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.getWorld(name)</code></td><td>Get world by name</td></tr>
                             <tr><td><code>api.getWorlds()</code></td><td>Get all worlds</td></tr>
                             <tr><td><code>api.getWorldNames()</code></td><td>Get world names</td></tr>
+                            <tr><td><code>api.getWorldTime(world)</code></td><td>Get world time</td></tr>
                             <tr><td><code>api.setWorldTime(world, time)</code></td><td>Set world time</td></tr>
+                            <tr><td><code>api.hasStorm(world)</code></td><td>Check if storming</td></tr>
                             <tr><td><code>api.setStorm(world, storm)</code></td><td>Set storm</td></tr>
+                            <tr><td><code>api.isThundering(world)</code></td><td>Check if thundering</td></tr>
                             <tr><td><code>api.setThundering(world, thundering)</code></td><td>Set thundering</td></tr>
                             <tr><td><code>api.getBlock(location)</code></td><td>Get block</td></tr>
+                            <tr><td><code>api.getBlockType(location)</code></td><td>Get block type</td></tr>
                             <tr><td><code>api.setBlockType(location, material)</code></td><td>Set block type</td></tr>
                             <tr><td><code>api.breakBlock(location)</code></td><td>Break block</td></tr>
+                            <tr><td><code>api.breakBlock(location, dropItems)</code></td><td>Break block with drop option</td></tr>
                             <tr><td><code>api.getBlocksInRadius(center, radius)</code></td><td>Get blocks in radius</td></tr>
                             <tr><td><code>api.createExplosion(location, power)</code></td><td>Create explosion</td></tr>
+                            <tr><td><code>api.createExplosion(location, power, setFire)</code></td><td>Create explosion with fire</td></tr>
                             <tr><td><code>api.strikeLightning(location)</code></td><td>Strike lightning</td></tr>
+                            <tr><td><code>api.strikeLightningEffect(location)</code></td><td>Strike lightning effect</td></tr>
                         </table>
 
                         <h4>Entity Methods</h4>
@@ -1982,10 +1987,98 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.spawnEntity(location, type)</code></td><td>Spawn entity</td></tr>
                             <tr><td><code>api.spawnEntity(location, typeName)</code></td><td>Spawn entity (string)</td></tr>
+                            <tr><td><code>api.getNearbyEntities(location, x, y, z)</code></td><td>Get nearby entities</td></tr>
                             <tr><td><code>api.setEntityCustomName(entity, name)</code></td><td>Set entity name</td></tr>
                             <tr><td><code>api.setEntityGlowing(entity, glowing)</code></td><td>Set glowing</td></tr>
                             <tr><td><code>api.setEntityGravity(entity, gravity)</code></td><td>Set gravity</td></tr>
                             <tr><td><code>api.removeEntity(entity)</code></td><td>Remove entity</td></tr>
+                        </table>
+                        
+                        <h4>Scoreboard Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.getMainScoreboard()</code></td><td>Get main scoreboard</td></tr>
+                            <tr><td><code>api.createScoreboard()</code></td><td>Create new scoreboard</td></tr>
+                            <tr><td><code>api.getTeam(scoreboard, name)</code></td><td>Get team</td></tr>
+                            <tr><td><code>api.createTeam(scoreboard, name)</code></td><td>Create team</td></tr>
+                            <tr><td><code>api.getObjective(scoreboard, name)</code></td><td>Get objective</td></tr>
+                            <tr><td><code>api.createObjective(scoreboard, name, criteria, displayName)</code></td><td>Create objective</td></tr>
+                        </table>
+                        
+                        <h4>Potion Effect Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.createPotionEffect(type, duration, amplifier)</code></td><td>Create potion effect</td></tr>
+                            <tr><td><code>api.createPotionEffect(type, duration, amplifier, ambient)</code></td><td>Create potion effect with ambient</td></tr>
+                        </table>
+                        
+                        <h4>Location & Vector Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.createLocation(world, x, y, z)</code></td><td>Create location</td></tr>
+                            <tr><td><code>api.createLocation(world, x, y, z, yaw, pitch)</code></td><td>Create location with rotation</td></tr>
+                            <tr><td><code>api.createVector(x, y, z)</code></td><td>Create vector</td></tr>
+                            <tr><td><code>api.getDistance(loc1, loc2)</code></td><td>Get distance between locations</td></tr>
+                            <tr><td><code>api.getDistanceSquared(loc1, loc2)</code></td><td>Get squared distance</td></tr>
+                            <tr><td><code>api.getMidpoint(loc1, loc2)</code></td><td>Get midpoint between locations</td></tr>
+                        </table>
+                        
+                        <h4>Material Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.getMaterial(name)</code></td><td>Get material by name</td></tr>
+                            <tr><td><code>api.isBlock(material)</code></td><td>Check if material is block</td></tr>
+                            <tr><td><code>api.isItem(material)</code></td><td>Check if material is item</td></tr>
+                        </table>
+                        
+                        <h4>World Border Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.getWorldBorder(world)</code></td><td>Get world border</td></tr>
+                            <tr><td><code>api.setWorldBorderSize(world, size)</code></td><td>Set world border size</td></tr>
+                            <tr><td><code>api.setWorldBorderCenter(world, x, z)</code></td><td>Set world border center</td></tr>
+                        </table>
+                        
+                        <h4>Advancement Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.grantAdvancement(player, key)</code></td><td>Grant advancement</td></tr>
+                            <tr><td><code>api.revokeAdvancement(player, key)</code></td><td>Revoke advancement</td></tr>
+                        </table>
+                        
+                        <h4>Server & Plugin Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.getServerVersion()</code></td><td>Get server version</td></tr>
+                            <tr><td><code>api.getBukkitVersion()</code></td><td>Get Bukkit version</td></tr>
+                            <tr><td><code>api.getMaxPlayers()</code></td><td>Get max players</td></tr>
+                            <tr><td><code>api.getMotd()</code></td><td>Get MOTD</td></tr>
+                            <tr><td><code>api.isPluginEnabled(name)</code></td><td>Check if plugin enabled</td></tr>
+                            <tr><td><code>api.getPlugin(name)</code></td><td>Get plugin</td></tr>
+                            <tr><td><code>api.hasEconomy()</code></td><td>Check if economy available</td></tr>
+                        </table>
+                        
+                        <h4>Logging Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.logInfo(message)</code></td><td>Log info message</td></tr>
+                            <tr><td><code>api.logWarning(message)</code></td><td>Log warning message</td></tr>
+                            <tr><td><code>api.logError(message)</code></td><td>Log error message</td></tr>
+                        </table>
+                        
+                        <h4>Random Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.randomInt(min, max)</code></td><td>Random integer</td></tr>
+                            <tr><td><code>api.randomDouble(min, max)</code></td><td>Random double</td></tr>
+                            <tr><td><code>api.randomBoolean()</code></td><td>Random boolean</td></tr>
+                        </table>
+                        
+                        <h4>String Utility Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.format(format, ...args)</code></td><td>Format string</td></tr>
+                            <tr><td><code>api.join(delimiter, ...elements)</code></td><td>Join strings</td></tr>
                         </table>
 
                         <h4>Utility Methods</h4>
@@ -2002,18 +2095,36 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.base64Decode(input)</code></td><td>Base64 decode</td></tr>
                             <tr><td><code>api.urlEncode(input)</code></td><td>URL encode</td></tr>
                             <tr><td><code>api.urlDecode(input)</code></td><td>URL decode</td></tr>
-                            <tr><td><code>api.getCurrentTimeMillis()</code></td><td>Get current time</td></tr>
+                            <tr><td><code>api.getCurrentTimeMillis()</code></td><td>Get current time (milliseconds)</td></tr>
+                            <tr><td><code>api.getCurrentTime()</code></td><td>Get current time (seconds)</td></tr>
                             <tr><td><code>api.formatDate(timestamp)</code></td><td>Format date</td></tr>
+                            <tr><td><code>api.formatDate(timestamp, pattern)</code></td><td>Format date with pattern</td></tr>
                             <tr><td><code>api.parseDate(dateString)</code></td><td>Parse date</td></tr>
-                            <tr><td><code>api.getDistance(loc1, loc2)</code></td><td>Get distance</td></tr>
-                            <tr><td><code>api.getMidpoint(loc1, loc2)</code></td><td>Get midpoint</td></tr>
-                            <tr><td><code>api.getMaterial(name)</code></td><td>Get material</td></tr>
-                            <tr><td><code>api.createLocation(world, x, y, z)</code></td><td>Create location</td></tr>
-                            <tr><td><code>api.createVector(x, y, z)</code></td><td>Create vector</td></tr>
+                            <tr><td><code>api.parseDate(dateString, pattern)</code></td><td>Parse date with pattern</td></tr>
                             <tr><td><code>api.hasPermission(sender, permission)</code></td><td>Check permission</td></tr>
                             <tr><td><code>api.executeCommand(command)</code></td><td>Execute console command</td></tr>
                             <tr><td><code>api.httpGet(url)</code></td><td>HTTP GET request</td></tr>
                             <tr><td><code>api.httpPost(url, data)</code></td><td>HTTP POST request</td></tr>
+                        </table>
+                        
+                        <h4>File Existence Methods</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.yamlFileExists(fileName)</code></td><td>Check if YAML file exists</td></tr>
+                            <tr><td><code>api.jsonFileExists(fileName)</code></td><td>Check if JSON file exists</td></tr>
+                            <tr><td><code>api.textFileExists(fileName)</code></td><td>Check if text file exists</td></tr>
+                            <tr><td><code>api.deleteYamlFile(fileName)</code></td><td>Delete YAML file</td></tr>
+                            <tr><td><code>api.deleteJsonFile(fileName)</code></td><td>Delete JSON file</td></tr>
+                            <tr><td><code>api.deleteTextFile(fileName)</code></td><td>Delete text file</td></tr>
+                        </table>
+                        
+                        <h4>Database Methods (Additional)</h4>
+                        <table>
+                            <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.countRows(dbName, tableName)</code></td><td>Count rows in table</td></tr>
+                            <tr><td><code>api.countRows(dbName, tableName, where)</code></td><td>Count rows with condition</td></tr>
+                            <tr><td><code>api.updateData(dbName, tableName, data, where)</code></td><td>Update data</td></tr>
+                            <tr><td><code>api.deleteData(dbName, tableName, where)</code></td><td>Delete data</td></tr>
                         </table>
                     </div>
                 </section>
@@ -2128,6 +2239,464 @@ var midpoint = api.getMidpoint(loc1, loc2);</code></pre>
                             <li>Use cooldowns to prevent spam</li>
                             <li>Cache frequently accessed data</li>
                         </ul>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section id="best-practices">
+                    <h2>✨ Best Practices</h2>
+                    
+                    <div class="card">
+                        <h3>Error Handling</h3>
+                        <pre><code class="language-javascript">// Always wrap risky operations in try-catch
+api.registerCommand("risky", "Risky command", "/risky", function(sender, args) {
+    try {
+        var player = api.getPlayer(args[0]);
+        if (!player) {
+            api.sendMessage(sender, "&cPlayer not found!");
+            return false;
+        }
+        
+        // Risky operation
+        player.teleport(someLocation);
+        api.sendMessage(sender, "&aSuccess!");
+        return true;
+    } catch (e) {
+        logger.severe("Error in risky command: " + e);
+        api.sendMessage(sender, "&cAn error occurred!");
+        return false;
+    }
+});
+
+// Event handlers should also have error handling
+api.registerEvent("player.PlayerJoinEvent", function(event) {
+    try {
+        var player = event.getPlayer();
+        // Your code here
+    } catch (e) {
+        logger.severe("Error in PlayerJoinEvent: " + e);
+        // Don't let errors break the event system
+    }
+});</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Performance Optimization</h3>
+                        <pre><code class="language-javascript">// ❌ BAD: Checking player every tick
+api.runTaskTimer(0, 1, function() {
+    var players = api.getOnlinePlayers();
+    for (var i = 0; i < players.length; i++) {
+        // Heavy operation
+    }
+});
+
+// ✅ GOOD: Cache data and check less frequently
+var cachedPlayers = [];
+api.runTaskTimer(0, 20, function() { // Every second instead of every tick
+    cachedPlayers = api.getOnlinePlayers();
+    for (var i = 0; i < cachedPlayers.length; i++) {
+        // Heavy operation
+    }
+});
+
+// ✅ GOOD: Use async for heavy operations
+api.runTaskAsync(function() {
+    var data = api.httpGet("https://api.example.com/heavy");
+    // Process data...
+    
+    // Update on main thread
+    api.runTask(function() {
+        api.broadcast("Data loaded!");
+    });
+});
+
+// ✅ GOOD: Cancel tasks when not needed
+var task = api.runTaskTimer(0, 20, function() {
+    // Do something
+});
+
+// Later, when done:
+api.cancelTask(task);</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Code Organization</h3>
+                        <pre><code class="language-javascript">// ✅ GOOD: Organized plugin structure
+var pluginInfo = {
+    name: "My Plugin",
+    version: "1.0.0"
+};
+
+// Configuration
+var config = {
+    enabled: true,
+    cooldown: 5000
+};
+
+// Data storage
+var playerData = {};
+
+// Helper functions
+function formatMessage(player, message) {
+    return "&7[" + player.getName() + "] &f" + message;
+}
+
+function hasPermission(player, perm) {
+    return api.hasPermission(player, "myplugin." + perm);
+}
+
+// Main functions
+function onEnable() {
+    logger.info("Loading " + pluginInfo.name + " v" + pluginInfo.version);
+    
+    // Initialize
+    initializeDatabase();
+    registerCommands();
+    registerEvents();
+    
+    logger.info(pluginInfo.name + " enabled!");
+}
+
+function onDisable() {
+    // Cleanup
+    saveData();
+    logger.info(pluginInfo.name + " disabled!");
+}
+
+// Exports
+this.onEnable = onEnable;
+this.onDisable = onDisable;
+this.pluginInfo = pluginInfo;</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Player Safety Checks</h3>
+                        <pre><code class="language-javascript">// Always check if player is online before using
+api.registerEvent("player.PlayerQuitEvent", function(event) {
+    var player = event.getPlayer();
+    var playerName = player.getName();
+    
+    // Save data before player leaves
+    savePlayerData(playerName);
+});
+
+// Check if player exists before operations
+function giveReward(playerName) {
+    var player = api.getPlayer(playerName);
+    if (!player) {
+        logger.warning("Player " + playerName + " is not online!");
+        return false;
+    }
+    
+    // Safe to use player object
+    api.giveItem(player, reward);
+    return true;
+}
+
+// Use instanceof to check player type
+api.registerCommand("playeronly", "Player only command", "/playeronly", function(sender, args) {
+    if (!(sender instanceof Player)) {
+        api.sendMessage(sender, "&cThis command can only be used by players!");
+        return false;
+    }
+    
+    var player = sender;
+    // Safe to use player methods
+    player.teleport(location);
+    return true;
+});</code></pre>
+                    </div>
+                </section>
+
+                <!-- Troubleshooting -->
+                <section id="troubleshooting">
+                    <h2>🔧 Troubleshooting</h2>
+                    
+                    <div class="card">
+                        <h3>Common Issues & Solutions</h3>
+                        
+                        <h4>Plugin not loading</h4>
+                        <ul>
+                            <li><strong>Check file extension:</strong> Must be <code>.js</code></li>
+                            <li><strong>Check syntax:</strong> Use a JavaScript validator</li>
+                            <li><strong>Check console:</strong> Look for error messages</li>
+                            <li><strong>Check onEnable:</strong> Function must be defined and exported</li>
+                            <li><strong>Check file location:</strong> Must be in <code>plugins/MC-JS/js-plugins/</code></li>
+                        </ul>
+
+                        <h4>Events not firing</h4>
+                        <ul>
+                            <li><strong>Check event name:</strong> Use format <code>player.PlayerJoinEvent</code></li>
+                            <li><strong>Check registration:</strong> Must be in <code>onEnable</code></li>
+                            <li><strong>Check handler:</strong> Function must accept event parameter</li>
+                            <li><strong>Check console:</strong> Look for registration errors</li>
+                            <li><strong>Try reload:</strong> Use <code>/jsreload &lt;plugin&gt;</code></li>
+                        </ul>
+
+                        <h4>Commands not working</h4>
+                        <ul>
+                            <li><strong>Check registration:</strong> Must be in <code>onEnable</code></li>
+                            <li><strong>Check return value:</strong> Must return <code>true</code> or <code>false</code></li>
+                            <li><strong>Check permissions:</strong> Use <code>api.hasPermission()</code></li>
+                            <li><strong>Check console:</strong> Look for JavaScript errors</li>
+                            <li><strong>Try reload:</strong> Use <code>/jsreload &lt;plugin&gt;</code></li>
+                        </ul>
+
+                        <h4>Player is null errors</h4>
+                        <ul>
+                            <li><strong>Always check:</strong> <code>if (player) { ... }</code></li>
+                            <li><strong>Use instanceof:</strong> <code>if (sender instanceof Player)</code></li>
+                            <li><strong>Check online status:</strong> <code>api.getPlayer(name)</code> returns null if offline</li>
+                            <li><strong>Handle offline players:</strong> Use <code>server.getOfflinePlayer()</code> for UUID</li>
+                        </ul>
+
+                        <h4>Database errors</h4>
+                        <ul>
+                            <li><strong>Check table exists:</strong> Use <code>api.createTable()</code> first</li>
+                            <li><strong>Check data types:</strong> Match column types</li>
+                            <li><strong>Check NOT NULL:</strong> Provide values for required fields</li>
+                            <li><strong>Check SQL syntax:</strong> Use proper SQL in queries</li>
+                            <li><strong>Check file permissions:</strong> Database files need write access</li>
+                        </ul>
+
+                        <h4>Performance issues</h4>
+                        <ul>
+                            <li><strong>Avoid heavy operations:</strong> Use async tasks</li>
+                            <li><strong>Cache data:</strong> Don't query database every tick</li>
+                            <li><strong>Cancel tasks:</strong> Clean up repeating tasks</li>
+                            <li><strong>Limit operations:</strong> Don't process all players every tick</li>
+                            <li><strong>Use cooldowns:</strong> Prevent spam</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h3>Debug Mode</h3>
+                        <p>Enable debug mode in <code>config.yml</code> to see detailed logging:</p>
+                        <pre><code class="language-yaml">settings:
+  debug-mode: true</code></pre>
+                        <p>This will show:</p>
+                        <ul>
+                            <li>Event registration details</li>
+                            <li>Event execution logs</li>
+                            <li>Plugin loading information</li>
+                            <li>Command execution details</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h3>Common Error Messages</h3>
+                        
+                        <h4>"ReferenceError: X is not defined"</h4>
+                        <p><strong>Solution:</strong> Check if the variable/class is available. Use <code>instanceof Player</code> instead of checking for undefined properties.</p>
+                        
+                        <h4>"Cannot read property 'X' of null"</h4>
+                        <p><strong>Solution:</strong> Always check if objects exist before accessing properties:</p>
+                        <pre><code class="language-javascript">var player = api.getPlayer(name);
+if (player) {
+    player.teleport(location);
+}</code></pre>
+                        
+                        <h4>"SQLiteException: NOT NULL constraint failed"</h4>
+                        <p><strong>Solution:</strong> Ensure all required fields are provided when inserting data:</p>
+                        <pre><code class="language-javascript">api.insertData("db", "table", {
+    "required_field": value, // Must not be null
+    "optional_field": value || null
+});</code></pre>
+                        
+                        <h4>"Events being called multiple times"</h4>
+                        <p><strong>Solution:</strong> This is fixed in MC-JS - events are only dispatched once per event instance, even if multiple plugins register the same event.</p>
+                    </div>
+                </section>
+
+                <!-- FAQ -->
+                <section id="faq">
+                    <h2>❓ Frequently Asked Questions</h2>
+                    
+                    <div class="card">
+                        <h3>General Questions</h3>
+                        
+                        <h4>Q: Can I use ES6+ features?</h4>
+                        <p><strong>A:</strong> Yes! MC-JS uses Rhino with ES6 support. You can use arrow functions, let/const, template literals, etc.</p>
+                        
+                        <h4>Q: How do I reload my plugin?</h4>
+                        <p><strong>A:</strong> Use <code>/jsreload &lt;plugin-name&gt;</code> or <code>/jsreload</code> to reload all plugins.</p>
+                        
+                        <h4>Q: Can I use npm packages?</h4>
+                        <p><strong>A:</strong> No, MC-JS uses Rhino which doesn't support Node.js modules. Use the built-in API instead.</p>
+                        
+                        <h4>Q: How do I check if a player is online?</h4>
+                        <p><strong>A:</strong> Use <code>api.getPlayer(name)</code> - it returns <code>null</code> if the player is offline.</p>
+                        
+                        <h4>Q: Can I access Bukkit API directly?</h4>
+                        <p><strong>A:</strong> Yes! The <code>server</code> object gives you access to the Bukkit Server instance. Also, Bukkit classes like <code>Player</code>, <code>Material</code>, etc. are available.</p>
+                        
+                        <h4>Q: How do I handle offline players?</h4>
+                        <p><strong>A:</strong> Use <code>server.getOfflinePlayer(name)</code> to get UUID and other data for offline players.</p>
+                        
+                        <h4>Q: Can multiple plugins register the same event?</h4>
+                        <p><strong>A:</strong> Yes! Each plugin's handler will be called. MC-JS ensures events are only dispatched once per event instance.</p>
+                        
+                        <h4>Q: How do I create a config file?</h4>
+                        <p><strong>A:</strong> Use <code>api.getPluginConfig(pluginName)</code> and <code>api.savePluginConfig(pluginName, data)</code>.</p>
+                        
+                        <h4>Q: Can I use async/await?</h4>
+                        <p><strong>A:</strong> No, but you can use <code>api.runTaskAsync()</code> for asynchronous operations.</p>
+                        
+                        <h4>Q: How do I prevent command spam?</h4>
+                        <p><strong>A:</strong> Use the cooldown system: <code>api.setCooldown(playerName, "command", 5000)</code></p>
+                    </div>
+                </section>
+
+                <!-- Code Snippets -->
+                <section id="code-snippets">
+                    <h2>📋 Common Code Snippets</h2>
+                    
+                    <div class="card">
+                        <h3>Player Utilities</h3>
+                        <pre><code class="language-javascript">// Check if player is online
+function isPlayerOnline(name) {
+    return api.getPlayer(name) !== null;
+}
+
+// Get player safely
+function getPlayerSafe(name) {
+    var player = api.getPlayer(name);
+    if (!player) {
+        logger.warning("Player " + name + " is not online!");
+        return null;
+    }
+    return player;
+}
+
+// Get UUID for online or offline player
+function getPlayerUUID(name) {
+    var player = api.getPlayer(name);
+    if (player) {
+        return player.getUniqueId().toString();
+    }
+    try {
+        var offline = server.getOfflinePlayer(name);
+        return offline.getUniqueId().toString();
+    } catch (e) {
+        return null;
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Command Patterns</h3>
+                        <pre><code class="language-javascript">// Command with permission check
+api.registerCommand("admin", "Admin command", "/admin", function(sender, args) {
+    if (!api.hasPermission(sender, "myplugin.admin")) {
+        api.sendMessage(sender, "&cNo permission!");
+        return false;
+    }
+    
+    if (!(sender instanceof Player)) {
+        api.sendMessage(sender, "&cPlayers only!");
+        return false;
+    }
+    
+    // Command logic
+    return true;
+});
+
+// Command with cooldown
+api.registerCommand("cooldown", "Cooldown command", "/cooldown", function(sender, args) {
+    if (!(sender instanceof Player)) return false;
+    
+    var player = sender;
+    var playerName = player.getName();
+    
+    if (api.hasCooldown(playerName, "cooldown")) {
+        var remaining = api.getCooldownRemaining(playerName, "cooldown");
+        api.sendMessage(player, "&cCooldown: " + Math.ceil(remaining / 1000) + "s");
+        return false;
+    }
+    
+    api.setCooldown(playerName, "cooldown", 5000);
+    api.sendMessage(player, "&aCommand executed!");
+    return true;
+});</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>Data Storage Patterns</h3>
+                        <pre><code class="language-javascript">// Save player data
+var playerData = {};
+
+function savePlayerData(playerName) {
+    try {
+        api.saveYamlFile("players/" + playerName, playerData[playerName] || {});
+    } catch (e) {
+        logger.severe("Error saving data for " + playerName + ": " + e);
+    }
+}
+
+function loadPlayerData(playerName) {
+    try {
+        var data = api.loadYamlFile("players/" + playerName);
+        if (data) {
+            playerData[playerName] = data;
+        }
+    } catch (e) {
+        logger.warning("No data found for " + playerName);
+        playerData[playerName] = {};
+    }
+}
+
+// Save on quit
+api.registerEvent("player.PlayerQuitEvent", function(event) {
+    var player = event.getPlayer();
+    savePlayerData(player.getName());
+    delete playerData[player.getName()];
+});</code></pre>
+                    </div>
+
+                    <div class="card">
+                        <h3>GUI Patterns</h3>
+                        <pre><code class="language-javascript">// Simple GUI with GUI Builder
+function openMenu(player) {
+    var gui = api.createGUI("&6Menu", 3);
+    
+    // Background
+    var bg = api.createItemStack(api.getMaterial("GRAY_STAINED_GLASS_PANE"), 1);
+    bg = api.setItemDisplayName(bg, " ");
+    gui.fillBorders(bg);
+    
+    // Items
+    var item1 = api.createItemStack(api.getMaterial("DIAMOND"), 1);
+    item1 = api.setItemDisplayName(item1, "&bOption 1");
+    gui.setItem(10, item1, function(event) {
+        event.setCancelled(true);
+        api.sendMessage(player, "&aYou clicked Option 1!");
+    });
+    
+    gui.buildAndOpen(player);
+}
+
+// GUI with data storage
+var guiData = {};
+
+function openShop(player) {
+    var gui = api.createGUI("&6Shop", 3);
+    var playerName = player.getName();
+    
+    guiData[playerName] = {
+        page: 1,
+        category: "weapons"
+    };
+    
+    // Store data in holder
+    var inv = gui.build();
+    var holder = api.getInventoryHolder(inv);
+    if (holder) {
+        holder.setData("player", playerName);
+        holder.setData("page", 1);
+    }
+    
+    player.openInventory(inv);
+}</code></pre>
                     </div>
                 </section>
             </main>

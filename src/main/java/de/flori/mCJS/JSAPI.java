@@ -426,8 +426,8 @@ public class JSAPI {
                     // Use the Consumer-based registration
                     Listener dummyListener = new Listener() {};
                     java.util.function.Consumer<Event> consumer = (event) -> {
-                        // Dispatch once for all handlers (priority filtering happens in dispatchEventForAllPriorities)
-                        dispatchEventForAllPriorities(event);
+                        // Use executeEventWrapper to prevent duplicate execution
+                        executeEventWrapper(dummyListener, event);
                     };
                     
                     registerEventMethod.invoke(plugin.getServer().getPluginManager(), 
@@ -508,18 +508,41 @@ public class JSAPI {
         }
     }
     
+    // Track events that are currently being dispatched to prevent duplicate execution
+    private static final Set<Event> eventsBeingDispatched = Collections.synchronizedSet(Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
+    
     // Wrapper method that gets the event class from the map and dispatches
     @SuppressWarnings("unused")
     private static void executeEventWrapper(Listener listener, Event event) {
-        // Find which event class this handler is for by checking the method map
-        // Since we can't bind parameters, we need to check all registered event classes
-        synchronized (globalEventHandlers) {
-            for (Class<? extends Event> eventClass : globalEventHandlers.keySet()) {
-                if (eventClass.isInstance(event)) {
-                    // Dispatch once for all priorities - dispatchEvent will filter by priority
-                    dispatchEventForAllPriorities(event);
-                    break; // Only dispatch once per event
+        // Prevent duplicate execution if this event is already being dispatched
+        // This can happen if multiple plugins register the same event class
+        synchronized (eventsBeingDispatched) {
+            if (eventsBeingDispatched.contains(event)) {
+                // Event is already being dispatched, skip
+                if (listenerPlugin != null && listenerPlugin.getConfig().getBoolean("settings.debug-mode", false)) {
+                    listenerPlugin.getLogger().info("[DEBUG] Skipping duplicate event dispatch for " + event.getClass().getSimpleName());
                 }
+                return;
+            }
+            eventsBeingDispatched.add(event);
+        }
+        
+        try {
+            // Find which event class this handler is for by checking the method map
+            // Since we can't bind parameters, we need to check all registered event classes
+            synchronized (globalEventHandlers) {
+                for (Class<? extends Event> eventClass : globalEventHandlers.keySet()) {
+                    if (eventClass.isInstance(event)) {
+                        // Dispatch once for all priorities - dispatchEvent will filter by priority
+                        dispatchEventForAllPriorities(event);
+                        break; // Only dispatch once per event
+                    }
+                }
+            }
+        } finally {
+            // Remove from tracking set after dispatch completes
+            synchronized (eventsBeingDispatched) {
+                eventsBeingDispatched.remove(event);
             }
         }
     }
