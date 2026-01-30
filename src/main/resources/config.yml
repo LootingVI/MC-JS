@@ -1,0 +1,43 @@
+# MC-JS Plugin Configuration
+
+# General Settings
+settings:
+  # Enable or disable the example plugin
+  # Set to false to disable the example.js plugin
+  enable-example-plugin: true
+  
+  # Enable debug logging for JS plugins
+  debug-mode: false
+  
+  # Auto-reload plugins when files change (requires file watcher)
+  auto-reload: false
+
+# Plugin Management
+plugins:
+  # List of plugins to disable (by filename without .js extension)
+  # Example: disabled-plugins: [example, another-plugin]
+  disabled-plugins: []
+  
+  # List of plugins to always load first (in order)
+  # Example: load-order: [core-plugin, api-plugin]
+  load-order: []
+
+# Performance Settings
+performance:
+  # Rhino optimization level (-1 = disabled, 0-9 = optimization levels)
+  # -1 is recommended for better compatibility
+  optimization-level: -1
+  
+  # Maximum execution time for JS callbacks in milliseconds
+  # Set to 0 to disable timeout
+  max-execution-time: 5000
+
+# Security Settings
+security:
+  # Enable file system access restrictions
+  restrict-file-access: false
+  
+  # Allowed file paths (if restrict-file-access is true)
+  allowed-paths:
+    - "plugins/MC-JS/js-plugins/"
+    - "plugins/MC-JS/data/"

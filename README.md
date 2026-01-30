@@ -7,11 +7,16 @@
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.20+-green.svg)](https://www.minecraft.net/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.0.0-brightgreen.svg)](https://github.com/yourusername/MC-JS/releases)
+[![Version](https://img.shields.io/badge/Version-2.0.0-brightgreen.svg)](https://github.com/LootingVI/MC-JS/releases)
+[![GitHub](https://img.shields.io/github/stars/LootingVI/MC-JS?style=social)](https://github.com/LootingVI/MC-JS)
 
 **A powerful Minecraft plugin that allows you to create server plugins using JavaScript instead of Java.**
 
-[Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Examples](#-examples)
+[Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Examples](#-examples) • [API Reference](#-complete-api-reference)
+
+---
+
+> 💡 **New to MC-JS?** Start with the [Quick Start](#-quick-start) guide or check out our [complete documentation](https://lootingvi.github.io/MC-JS/).
 
 </div>
 
@@ -21,32 +26,34 @@
 
 ### 🎯 Core Capabilities
 
-- **📝 Full JavaScript Support** - Write plugins in modern JavaScript (ES6+)
-- **⚡ Hot Reload** - Reload plugins without restarting the server
+- **📝 Full JavaScript Support** - Write plugins in modern JavaScript (ES6+) using Rhino Engine
+- **⚡ Hot Reload** - Reload plugins without restarting the server (`/jsreload`)
 - **🔧 Complete API Access** - Access to virtually all Bukkit/Spigot/Paper API functions
-- **🎮 Event System** - Register listeners for any Minecraft event
-- **💬 Command System** - Create custom commands with tab completion
+- **🎮 Event System** - Register listeners for any Minecraft event with priority support
+- **💬 Command System** - Create custom commands with full tab completion support
 - **⏰ Task Scheduling** - Synchronous and asynchronous task scheduling
-- **📦 Inventory Management** - Create and manage custom GUIs
-- **🗄️ Database Support** - Built-in SQLite database operations
-- **🌐 HTTP Requests** - Make HTTP GET/POST requests
+- **📦 Inventory Management** - Create and manage custom GUIs with click handlers
+- **🗄️ Database Support** - Built-in SQLite database operations (INSERT, UPDATE, DELETE, SELECT)
+- **🌐 HTTP Requests** - Make HTTP GET/POST requests asynchronously
 - **🔐 Encryption** - MD5, SHA256, Base64 encoding/decoding
 - **📁 File I/O** - YAML, JSON, and text file support
-- **🎨 BossBar Support** - Create and manage boss bars
-- **⏱️ Cooldown System** - Built-in cooldown management
-- **⚙️ Config System** - Per-plugin configuration files
+- **🎨 BossBar Support** - Create and manage boss bars with progress tracking
+- **⏱️ Cooldown System** - Built-in cooldown management per player
+- **⚙️ Config System** - Per-plugin configuration files (YAML)
+- **🌍 World Management** - Control weather, time, world border, explosions
+- **🎯 Entity Management** - Spawn, control, and customize entities
+- **🔒 Player Management** - Ban, kick, teleport, health, food, gamemode
 
 ### 🛠️ Advanced Features
 
 - **🎨 Particle Effects** - Spawn particles with string or enum support
 - **🔊 Sound System** - Play sounds at locations or for players
 - **📊 Scoreboard System** - Create and manage scoreboards, teams, objectives
-- **🌍 World Management** - Control weather, time, and world settings
-- **👤 Player Management** - Health, food, game mode, teleportation
-- **📝 Item Manipulation** - Create, modify, and manage items
-- **🎯 Entity Control** - Spawn and control entities
-- **🔒 Permission System** - Check and manage permissions
-- **🎨 Color Support** - Minecraft color codes and formatting
+- **📝 Item Manipulation** - Create, modify, and manage items with custom names and lore
+- **🔒 Permission System** - Check and manage player permissions
+- **🎨 Color Support** - Minecraft color codes and formatting utilities
+- **🌐 HTTP Integration** - Make external API calls and web requests
+- **📊 Economy Integration** - Vault economy support for server economies
 
 ---
 
@@ -60,7 +67,7 @@
 
 ### Steps
 
-1. **Download the latest release** from the [Releases](https://github.com/yourusername/MC-JS/releases) page
+1. **Download the latest release** from the [Releases](https://github.com/LootingVI/MC-JS/releases) page
 2. **Place the JAR file** in your server's `plugins/` folder
 3. **Start or restart** your server
 4. **Create JS plugins** in `plugins/MC-JS/js-plugins/`
@@ -71,10 +78,17 @@ The plugin will automatically create the `js-plugins` directory and copy an exam
 
 ## 🚀 Quick Start
 
+### Prerequisites
+
+- Minecraft server running Paper/Spigot 1.20+
+- MC-JS plugin installed in `plugins/` folder
+- Basic JavaScript knowledge
+
 ### Creating Your First Plugin
 
-1. **Create a new file** in `plugins/MC-JS/js-plugins/` with a `.js` extension
-2. **Add the following code**:
+1. **Navigate to** `plugins/MC-JS/js-plugins/` directory
+2. **Create a new file** with a `.js` extension (e.g., `myplugin.js`)
+3. **Add the following code**:
 
 ```javascript
 // Plugin metadata
@@ -111,25 +125,32 @@ this.onDisable = onDisable;
 this.pluginInfo = pluginInfo;
 ```
 
-3. **Reload the plugin** using `/jsreload` or restart the server
-4. **Test your command** with `/hello`
+3. **Save the file** - The plugin will auto-load on server start, or use `/jsreload` to reload
+4. **Test your command** - Type `/hello` in-game or in console
+5. **Check console** - Look for "My plugin is enabled!" message
+
+> 💡 **Tip**: Use `/jslist` to see all loaded JavaScript plugins and `/jsreload <plugin>` to reload a specific plugin.
 
 ---
 
 ## 📚 Documentation
 
-### Global Objects
+> **📖 Full Documentation**: Visit our [complete documentation website](https://lootingvi.github.io/MC-JS/) for detailed API reference, examples, and guides.
+
+### Available Objects
+
+These objects are automatically available in all JavaScript plugins:
 
 These objects are available in all JavaScript plugins:
 
-| Object | Description |
-|--------|-------------|
-| `api` | Complete JS API wrapper - main interface for all operations |
-| `server` | Minecraft server instance |
-| `plugin` | Main plugin instance |
-| `logger` | Plugin logger (use `logger.info()`, `logger.warning()`, etc.) |
-| `scheduler` | Server scheduler |
-| `Bukkit` | Bukkit API access |
+| Object | Description | Usage |
+|--------|-------------|-------|
+| `api` | Complete JS API wrapper - main interface for all operations | `api.registerCommand(...)` |
+| `server` | Minecraft server instance | `server.getOnlinePlayers()` |
+| `plugin` | Main plugin instance | `plugin.getName()` |
+| `logger` | Plugin logger | `logger.info("Message")` |
+| `scheduler` | Server scheduler | `scheduler.runTask(...)` |
+| `Bukkit` | Direct Bukkit API access | `Bukkit.getServer()` |
 
 ### Command Registration
 
@@ -701,9 +722,10 @@ this.pluginInfo = pluginInfo;
 - Verify the command executor returns `true` or `false`
 
 ### Need help?
-- Check the [Issues](https://github.com/yourusername/MC-JS/issues) page
+- Check the [Issues](https://github.com/LootingVI/MC-JS/issues) page
 - Create a new issue with your problem
 - Include error logs and your plugin code
+- Visit the [Documentation Website](https://lootingvi.github.io/MC-JS/) for complete API reference
 
 ---
 
@@ -719,17 +741,25 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
+## 🛠️ Development Tools
+
+- **📝 Commit Generator**: Use `python scripts/commit-generator.py` for automatic commit messages
+- **📋 Issue Templates**: Bug reports and feature requests templates included
+- **🤝 Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
+- **📖 Documentation**: Complete API reference available at [lootingvi.github.io/MC-JS](https://lootingvi.github.io/MC-JS/)
+
+---
+
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 ## 🙏 Acknowledgments
 
 - Built with [Rhino JavaScript Engine](https://github.com/mozilla/rhino)
 - Compatible with [Paper](https://papermc.io/), [Spigot](https://www.spigotmc.org/), and [Bukkit](https://bukkit.org/)
 - Inspired by the need for easier plugin development
+- Special thanks to the Minecraft plugin development community
 
 ---
 
@@ -737,7 +767,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ for the Minecraft Community**
 
-[⭐ Star this repo](https://github.com/yourusername/MC-JS) • [🐛 Report Bug](https://github.com/yourusername/MC-JS/issues) • [💡 Request Feature](https://github.com/yourusername/MC-JS/issues)
+[⭐ Star this repo](https://github.com/LootingVI/MC-JS) • [🐛 Report Bug](https://github.com/LootingVI/MC-JS/issues) • [💡 Request Feature](https://github.com/LootingVI/MC-JS/issues) • [📚 Documentation](https://lootingvi.github.io/MC-JS/)
 
 </div>
-# MC-JS

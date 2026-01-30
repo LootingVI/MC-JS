@@ -17,6 +17,12 @@ public final class MCJS extends JavaPlugin {
         getLogger().info("Using Rhino JavaScript Engine");
         getLogger().info("========================================");
 
+        // Save default config if it doesn't exist
+        saveDefaultConfig();
+        
+        // Reload config to ensure we have the latest values
+        reloadConfig();
+
         // Initialize JS Plugin Manager
         try {
             jsPluginManager = new JSPluginManager(this);
@@ -71,6 +77,9 @@ public final class MCJS extends JavaPlugin {
                 return true;
             }
 
+            // Reload config before reloading plugins
+            reloadConfig();
+            
             // Reload all JS plugins
             if (jsPluginManager != null) {
                 jsPluginManager.unloadPlugins();
@@ -104,6 +113,31 @@ public final class MCJS extends JavaPlugin {
                     }
                 }
             }
+            return true;
+        } else if (command.getName().equalsIgnoreCase("jsconfig")) {
+            if (!sender.hasPermission("mcjs.admin")) {
+                sender.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+                return true;
+            }
+
+            if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
+                reloadConfig();
+                sender.sendMessage(ChatColor.GREEN + "Configuration reloaded!");
+                getLogger().info("Configuration reloaded by " + sender.getName());
+                return true;
+            }
+
+            // Show config info
+            sender.sendMessage(ChatColor.GREEN + "=== MC-JS Configuration ===");
+            sender.sendMessage(ChatColor.YELLOW + "Example plugin enabled: " + 
+                ChatColor.WHITE + getConfig().getBoolean("settings.enable-example-plugin", true));
+            sender.sendMessage(ChatColor.YELLOW + "Debug mode: " + 
+                ChatColor.WHITE + getConfig().getBoolean("settings.debug-mode", false));
+            sender.sendMessage(ChatColor.YELLOW + "Auto-reload: " + 
+                ChatColor.WHITE + getConfig().getBoolean("settings.auto-reload", false));
+            sender.sendMessage(ChatColor.YELLOW + "Disabled plugins: " + 
+                ChatColor.WHITE + getConfig().getStringList("plugins.disabled-plugins").toString());
+            sender.sendMessage(ChatColor.GRAY + "Use /jsconfig reload to reload the config file");
             return true;
         }
         return false;

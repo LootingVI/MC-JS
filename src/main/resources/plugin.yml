@@ -4,8 +4,8 @@ main: de.flori.mCJS.MCJS
 api-version: '1.21'
 author: Flori
 load: STARTUP
-description: Modern JavaScript plugin system for Minecraft using GraalVM
-website: https://github.com/flori/mc-js
+description: Modern JavaScript plugin system for Minecraft using Rhino Engine
+website: https://github.com/LootingVI/MC-JS
 commands:
   jsreload:
     description: Reload JS plugins (all or specific)
@@ -17,6 +17,11 @@ commands:
     usage: /<command>
     permission: mcjs.admin
     aliases: [jsl]
+  jsconfig:
+    description: View or reload plugin configuration
+    usage: /<command> [reload]
+    permission: mcjs.admin
+    aliases: [jsc]
 permissions:
   mcjs.admin:
     description: Allows managing JS plugins

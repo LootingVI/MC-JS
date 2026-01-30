@@ -29,15 +29,19 @@ public class JSPluginManager {
             jsPluginsDir.mkdirs();
             plugin.getLogger().info("Created js-plugins directory: " + jsPluginsDir.getAbsolutePath());
             
-            // Copy example plugin if it doesn't exist
-            try {
-                File exampleFile = new File(jsPluginsDir, "example.js");
-                if (!exampleFile.exists()) {
-                    plugin.saveResource("js-plugins/example.js", false);
-                    plugin.getLogger().info("Copied example.js to js-plugins directory");
+            // Copy example plugin if it doesn't exist and is enabled in config
+            if (isExamplePluginEnabled()) {
+                try {
+                    File exampleFile = new File(jsPluginsDir, "example.js");
+                    if (!exampleFile.exists()) {
+                        plugin.saveResource("js-plugins/example.js", false);
+                        plugin.getLogger().info("Copied example.js to js-plugins directory");
+                    }
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Could not copy example plugin: " + e.getMessage());
                 }
-            } catch (Exception e) {
-                plugin.getLogger().warning("Could not copy example plugin: " + e.getMessage());
+            } else {
+                plugin.getLogger().info("Example plugin is disabled in config, skipping copy");
             }
         }
 
@@ -53,6 +57,14 @@ public class JSPluginManager {
         plugin.getLogger().info("Found " + pluginFiles.length + " JS plugin file(s)");
         for (File pluginFile : pluginFiles) {
             try {
+                String pluginName = pluginFile.getName().replace(".js", "");
+                
+                // Check if plugin is disabled in config
+                if (isPluginDisabled(pluginName)) {
+                    plugin.getLogger().info("Skipping disabled plugin: " + pluginFile.getName());
+                    continue;
+                }
+                
                 plugin.getLogger().info("Loading JS plugin: " + pluginFile.getName());
                 loadPlugin(pluginFile);
             } catch (Exception e) {
@@ -73,7 +85,8 @@ public class JSPluginManager {
 
         // Create a new Rhino context for this plugin (isolated execution)
         org.mozilla.javascript.Context rhinoContext = org.mozilla.javascript.Context.enter();
-        rhinoContext.setOptimizationLevel(-1); // Disable optimization for better compatibility
+        int optimizationLevel = plugin.getConfig().getInt("performance.optimization-level", -1);
+        rhinoContext.setOptimizationLevel(optimizationLevel);
         rhinoContext.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
 
         try {
@@ -277,6 +290,35 @@ public class JSPluginManager {
                 plugin.getLogger().severe("Failed to reload plugin " + pluginName + ": " + e.getMessage());
             }
         }
+    }
+
+    /**
+     * Check if a plugin is disabled in the config
+     */
+    private boolean isPluginDisabled(String pluginName) {
+        // Check if example plugin is disabled
+        if (pluginName.equalsIgnoreCase("example")) {
+            return !isExamplePluginEnabled();
+        }
+        
+        // Check disabled-plugins list
+        java.util.List<String> disabledPlugins = plugin.getConfig().getStringList("plugins.disabled-plugins");
+        if (disabledPlugins != null) {
+            for (String disabled : disabledPlugins) {
+                if (disabled.equalsIgnoreCase(pluginName)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if example plugin is enabled in config
+     */
+    private boolean isExamplePluginEnabled() {
+        return plugin.getConfig().getBoolean("settings.enable-example-plugin", true);
     }
 
     public static class PluginMetadata {

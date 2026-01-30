@@ -9,6 +9,8 @@ import org.bukkit.event.*;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -278,10 +280,10 @@ public class JSAPI {
                 }
             }
             
-            // If not found yet, try different event packages
-            if (eventClass == null) {
+            // If not found yet, try different event packages (skip base org.bukkit.event. package)
+            // But only if eventClassName doesn't already contain a dot (which means it was already processed)
+            if (eventClass == null && !eventClassName.contains(".")) {
                 String[] packages = {
-                    "org.bukkit.event.",
                     "org.bukkit.event.player.",
                     "org.bukkit.event.block.",
                     "org.bukkit.event.entity.",
@@ -296,8 +298,12 @@ public class JSAPI {
                 
                 for (String pkg : packages) {
                     try {
-                        eventClass = Class.forName(pkg + eventClassName);
-                        break;
+                        Class<?> foundClass = Class.forName(pkg + eventClassName);
+                        // Double check it's not the base Event class
+                        if (foundClass != Event.class && Event.class.isAssignableFrom(foundClass)) {
+                            eventClass = foundClass;
+                            break;
+                        }
                     } catch (ClassNotFoundException e) {
                         // Try next package
                     }
@@ -309,13 +315,23 @@ public class JSAPI {
                 return;
             }
             
-            // Ensure it's a valid event class (not the base Event class)
-            if (Event.class.isAssignableFrom(eventClass) && eventClass != Event.class) {
+            // Final validation: ensure it's not the base Event class
+            if (eventClass == Event.class) {
+                plugin.getLogger().warning("Cannot register base Event class. Use a specific event type like 'player.PlayerJoinEvent'.");
+                return;
+            }
+            
+            // Ensure it's a valid event class
+            if (Event.class.isAssignableFrom(eventClass)) {
                 @SuppressWarnings("unchecked")
                 Class<? extends Event> clazz = (Class<? extends Event>) eventClass;
+                
+                // Log the resolved event class for debugging
+                plugin.getLogger().info("Registering event: " + eventClassName + " -> " + clazz.getName());
+                
                 registerEvent(clazz, handler);
             } else {
-                plugin.getLogger().warning("Invalid event class: " + eventClassName + " (cannot use base Event class)");
+                plugin.getLogger().warning("Class '" + eventClassName + "' is not an Event class.");
             }
         } catch (Exception e) {
             plugin.getLogger().severe("Error registering event '" + eventClassName + "': " + e.getMessage());
@@ -327,8 +343,7 @@ public class JSAPI {
         registerEvent(eventClass, handler, EventPriority.NORMAL);
     }
 
-    // Event handler storage - one listener per event class
-    private static final Map<Class<? extends Event>, Listener> eventListeners = new HashMap<>();
+    // Event handler storage - universal listener handles all events
     private static final Map<Class<? extends Event>, Map<JSAPI, List<EventHandlerInfo>>> globalEventHandlers = new HashMap<>();
     private static JavaPlugin listenerPlugin;
 
@@ -342,74 +357,166 @@ public class JSAPI {
         }
     }
 
-    // Create a dynamic listener for a specific event class
-    private static <T extends Event> Listener createEventListener(Class<T> eventClass, JavaPlugin plugin) {
-        return new Listener() {
-            @EventHandler(priority = EventPriority.LOWEST)
-            public void onEventLowest(T event) {
-                handleEvent(event, EventPriority.LOWEST);
+    // Map to track which event classes have been registered
+    private static final Set<Class<? extends Event>> registeredEventClasses = new HashSet<>();
+    
+    // Register a specific event class with PaperMC using reflection to find the right method
+    private static void registerEventClass(Class<? extends Event> eventClass, JavaPlugin plugin) {
+        synchronized (registeredEventClasses) {
+            if (registeredEventClasses.contains(eventClass)) {
+                return; // Already registered
             }
-
-            @EventHandler(priority = EventPriority.LOW)
-            public void onEventLow(T event) {
-                handleEvent(event, EventPriority.LOW);
-            }
-
-            @EventHandler(priority = EventPriority.NORMAL)
-            public void onEventNormal(T event) {
-                handleEvent(event, EventPriority.NORMAL);
-            }
-
-            @EventHandler(priority = EventPriority.HIGH)
-            public void onEventHigh(T event) {
-                handleEvent(event, EventPriority.HIGH);
-            }
-
-            @EventHandler(priority = EventPriority.HIGHEST)
-            public void onEventHighest(T event) {
-                handleEvent(event, EventPriority.HIGHEST);
-            }
-
-            @EventHandler(priority = EventPriority.MONITOR)
-            public void onEventMonitor(T event) {
-                handleEvent(event, EventPriority.MONITOR);
-            }
-
-            @SuppressWarnings("unchecked")
-            private void handleEvent(Event event, EventPriority currentPriority) {
-                Class<? extends Event> actualEventClass = event.getClass();
+            
+            // Log for debugging
+            plugin.getLogger().info("Attempting to register event class: " + eventClass.getName() + " (is Event.class: " + (eventClass == Event.class) + ")");
+            
+            try {
+                // Try to use PaperMC's registerEvent method with Consumer via reflection
+                java.lang.reflect.Method registerEventMethod = null;
+                try {
+                    // Try the method signature: registerEvent(Class, Listener, EventPriority, Consumer, Plugin)
+                    registerEventMethod = plugin.getServer().getPluginManager().getClass()
+                        .getMethod("registerEvent", Class.class, Listener.class, EventPriority.class, 
+                                  java.util.function.Consumer.class, Plugin.class);
+                } catch (NoSuchMethodException e) {
+                    // Method doesn't exist, try alternative approach
+                }
                 
-                // Check direct class match
-                Map<JSAPI, List<EventHandlerInfo>> handlersForClass = globalEventHandlers.get(eventClass);
+                if (registerEventMethod != null) {
+                    // Use the Consumer-based registration
+                    Listener dummyListener = new Listener() {};
+                    java.util.function.Consumer<Event> consumer = (event) -> {
+                        // Dispatch once for all handlers (priority filtering happens in dispatchEventForAllPriorities)
+                        dispatchEventForAllPriorities(event);
+                    };
+                    
+                    registerEventMethod.invoke(plugin.getServer().getPluginManager(), 
+                        eventClass, dummyListener, EventPriority.NORMAL, consumer, plugin);
+                } else {
+                    // Fallback: Register event directly using HandlerList
+                    registerEventViaHandlerList(eventClass, plugin);
+                }
                 
-                // If no direct match, check if the registered class is assignable from the actual event class
-                if (handlersForClass == null) {
-                    for (Map.Entry<Class<? extends Event>, Map<JSAPI, List<EventHandlerInfo>>> entry : globalEventHandlers.entrySet()) {
-                        if (entry.getKey().isAssignableFrom(actualEventClass)) {
-                            handlersForClass = entry.getValue();
-                            break;
-                        }
+                registeredEventClasses.add(eventClass);
+            } catch (Exception e) {
+                plugin.getLogger().severe("Failed to register event class " + eventClass.getName() + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    // Register event directly by manipulating HandlerList
+    private static <T extends Event> void registerEventViaHandlerList(Class<T> eventClass, JavaPlugin plugin) {
+        try {
+            // Get the HandlerList for this event class
+            java.lang.reflect.Method getHandlerListMethod = eventClass.getMethod("getHandlerList");
+            org.bukkit.event.HandlerList handlerList = (org.bukkit.event.HandlerList) getHandlerListMethod.invoke(null);
+            
+            // Create a listener that will handle this specific event class
+            Listener dummyListener = new Listener() {};
+            
+            // Create an EventExecutor that will call our wrapper method
+            org.bukkit.plugin.EventExecutor executor = new org.bukkit.plugin.EventExecutor() {
+                @Override
+                public void execute(Listener listener, Event event) throws EventException {
+                    executeEventWrapper(listener, event);
+                }
+            };
+            
+            // Use the EventExecutor-based constructor: RegisteredListener(Listener, EventExecutor, EventPriority, Plugin, boolean)
+            try {
+                java.lang.reflect.Constructor<RegisteredListener> constructor = 
+                    RegisteredListener.class.getConstructor(Listener.class, 
+                        org.bukkit.plugin.EventExecutor.class, EventPriority.class, Plugin.class, boolean.class);
+                
+                // Register only once with NORMAL priority - we'll handle all priorities in dispatchEvent
+                RegisteredListener registeredListener = constructor.newInstance(
+                    dummyListener, executor, EventPriority.NORMAL, plugin, false
+                );
+                handlerList.register(registeredListener);
+                
+                plugin.getLogger().info("Successfully registered event class " + eventClass.getName() + " via HandlerList");
+            } catch (NoSuchMethodException e) {
+                // Fallback: try to use reflection to find the constructor
+                plugin.getLogger().warning("Standard RegisteredListener constructor not found. Trying reflection...");
+                java.lang.reflect.Constructor<?>[] constructors = RegisteredListener.class.getDeclaredConstructors();
+                for (java.lang.reflect.Constructor<?> constructor : constructors) {
+                    constructor.setAccessible(true);
+                    Class<?>[] paramTypes = constructor.getParameterTypes();
+                    if (paramTypes.length == 5 &&
+                        paramTypes[0] == Listener.class &&
+                        paramTypes[1] == org.bukkit.plugin.EventExecutor.class &&
+                        paramTypes[2] == EventPriority.class &&
+                        paramTypes[3] == Plugin.class &&
+                        paramTypes[4] == boolean.class) {
+                        // Register only once with NORMAL priority - we'll handle all priorities in dispatchEvent
+                        RegisteredListener registeredListener = (RegisteredListener) constructor.newInstance(
+                            dummyListener, executor, EventPriority.NORMAL, plugin, false
+                        );
+                        handlerList.register(registeredListener);
+                        plugin.getLogger().info("Successfully registered event class " + eventClass.getName() + " via HandlerList (using reflection)");
+                        return;
                     }
                 }
                 
-                if (handlersForClass != null) {
+                plugin.getLogger().severe("Cannot register events: No suitable RegisteredListener constructor found. Events will not work.");
+            }
+            
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to register event via HandlerList for " + eventClass.getName() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    // Wrapper method that gets the event class from the map and dispatches
+    @SuppressWarnings("unused")
+    private static void executeEventWrapper(Listener listener, Event event) {
+        // Find which event class this handler is for by checking the method map
+        // Since we can't bind parameters, we need to check all registered event classes
+        synchronized (globalEventHandlers) {
+            for (Class<? extends Event> eventClass : globalEventHandlers.keySet()) {
+                if (eventClass.isInstance(event)) {
+                    // Dispatch once for all priorities - dispatchEvent will filter by priority
+                    dispatchEventForAllPriorities(event);
+                    break; // Only dispatch once per event
+                }
+            }
+        }
+    }
+    
+    // Dispatch event to all handlers regardless of priority (priority filtering happens inside)
+    private static void dispatchEventForAllPriorities(Event event) {
+        Class<? extends Event> actualEventClass = event.getClass();
+        
+        // Check all registered event classes to see if they match
+        synchronized (globalEventHandlers) {
+            for (Map.Entry<Class<? extends Event>, Map<JSAPI, List<EventHandlerInfo>>> entry : globalEventHandlers.entrySet()) {
+                Class<? extends Event> registeredClass = entry.getKey();
+                
+                // Check if the actual event class matches or is a subclass of the registered class
+                if (registeredClass.isAssignableFrom(actualEventClass)) {
+                    Map<JSAPI, List<EventHandlerInfo>> handlersForClass = entry.getValue();
+                    
                     for (Map.Entry<JSAPI, List<EventHandlerInfo>> apiEntry : handlersForClass.entrySet()) {
                         JSAPI api = apiEntry.getKey();
                         List<EventHandlerInfo> handlers = apiEntry.getValue();
                         
+                        // Execute all handlers for this event (priority is stored in EventHandlerInfo)
                         for (EventHandlerInfo info : handlers) {
-                            if (info.priority == currentPriority && info.handler instanceof Function && api.scope != null) {
+                            if (info.handler instanceof Function && api.scope != null) {
                                 try {
                                     org.mozilla.javascript.Context rhinoContext = org.mozilla.javascript.Context.enter();
                                     try {
-                                        rhinoContext.setOptimizationLevel(-1);
+                                        int optimizationLevel = listenerPlugin != null ? 
+                                            listenerPlugin.getConfig().getInt("performance.optimization-level", -1) : -1;
+                                        rhinoContext.setOptimizationLevel(optimizationLevel);
                                         rhinoContext.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
                                         Function func = (Function) info.handler;
                                         func.call(rhinoContext, api.scope, api.scope, new Object[]{event});
                                     } finally {
                                         org.mozilla.javascript.Context.exit();
-                }
-            } catch (Exception e) {
+                                    }
+                                } catch (Exception e) {
                                     if (listenerPlugin != null) {
                                         listenerPlugin.getLogger().severe("Error in JS event handler for " + actualEventClass.getSimpleName() + ": " + e.getMessage());
                                         e.printStackTrace();
@@ -420,8 +527,9 @@ public class JSAPI {
                     }
                 }
             }
-        };
+        }
     }
+    
 
     public <T extends Event> void registerEvent(Class<T> eventClass, Object handler, EventPriority priority) {
         // Check if Event is the base class (which doesn't have getHandlerList)
@@ -450,20 +558,8 @@ public class JSAPI {
             }
         }
         
-        // Create and register listener for this event class if not already registered
-        synchronized (eventListeners) {
-            if (!eventListeners.containsKey(eventClass)) {
-                try {
-                    Listener listener = createEventListener(eventClass, plugin);
-                    eventListeners.put(eventClass, listener);
-                    plugin.getServer().getPluginManager().registerEvents(listener, plugin);
-                } catch (Exception e) {
-                    plugin.getLogger().severe("Failed to register event listener for " + eventClass.getName() + ": " + e.getMessage());
-                    e.printStackTrace();
-                    return;
-                }
-            }
-        }
+        // Register this specific event class with PaperMC
+        registerEventClass(eventClass, plugin);
         
         // Store handler
         synchronized (globalEventHandlers) {
