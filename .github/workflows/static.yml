@@ -1,0 +1,32 @@
+# Deploy /docs folder to GitHub Pages using the official GitHub Pages Actions
+# Trigger: push to main (oder passe den Branch an), oder manuelles Auslösen
+name: Deploy Docs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload /docs artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
