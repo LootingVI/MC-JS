@@ -1016,6 +1016,9 @@ api.setFoodLevel(player, 20);
 var food = api.getFoodLevel(player);
 api.setSaturation(player, 5.0);
 
+// Inventory
+api.clearInventory(player);
+
 // Game Mode
 api.setGameMode(player, GameMode.CREATIVE);
 var gamemode = api.getGameMode(player);
@@ -2052,6 +2055,7 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.getFoodLevel(player)</code></td><td>Get food level</td></tr>
                             <tr><td><code>api.setSaturation(player, saturation)</code></td><td>Set saturation</td></tr>
                             <tr><td><code>api.getSaturation(player)</code></td><td>Get saturation</td></tr>
+                            <tr><td><code>api.clearInventory(player)</code></td><td>Clear player inventory</td></tr>
                             <tr><td><code>api.damage(player, damage)</code></td><td>Damage player</td></tr>
                             <tr><td><code>api.setExp(player, exp)</code></td><td>Set experience (0.0-1.0)</td></tr>
                             <tr><td><code>api.getExp(player)</code></td><td>Get experience (0.0-1.0)</td></tr>

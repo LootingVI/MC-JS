@@ -244,15 +244,36 @@ api.sendActionBar(player, "&bAction bar message");
 // Player properties
 api.setHealth(player, 20.0);
 api.setFoodLevel(player, 20);
+api.setSaturation(player, 20.0); // Set saturation level
 api.setGameMode(player, api.getMaterial("CREATIVE")); // Use GameMode enum
 api.teleport(player, location);
+
+// Clear player inventory
+api.clearInventory(player);
 ```
 
 ### Inventory & Items
 
 ```javascript
-// Create inventory
+// Method 1: Create inventory manually
 var inv = api.createInventory(null, 27, "&6My GUI");
+
+// Method 2: Use GUI Builder (recommended - easier and more powerful)
+var gui = api.inventory.createGUI("&6My GUI", 3); // 3 rows = 27 slots
+gui.setItem(10, item1)
+   .setItem(12, item2)
+   .setItem(14, item3)
+   .onClick(function(event) {
+       event.setCancelled(true);
+       var slot = event.getSlot();
+       if (slot === 10) {
+           api.sendMessage(event.getWhoClicked(), "&aYou clicked item 1!");
+       }
+   })
+   .onClose(function(event) {
+       api.sendMessage(event.getPlayer(), "&7GUI closed!");
+   });
+gui.open(player);
 
 // Create item
 var item = api.createItemStack(api.getMaterial("DIAMOND"), 1);
@@ -545,12 +566,11 @@ var pluginInfo = {
 
 function onEnable() {
     api.registerCommand("menu", "Open custom menu", "/menu", function(sender, args) {
-        if (!(sender instanceof Player)) {
+        var player = api.getPlayerFromSender(sender);
+        if (!player) {
             api.sendMessage(sender, "&cOnly players can use this command!");
             return false;
         }
-        
-        var player = sender;
         var inv = api.createInventory(null, 27, "&6Custom Menu");
         
         // Fill with items
@@ -619,23 +639,41 @@ this.pluginInfo = pluginInfo;
 - `api.cancelTask(task)`
 
 ### Player Methods
-- `api.getPlayer(name)`
-- `api.getPlayerExact(name)`
-- `api.getOnlinePlayers()`
-- `api.sendMessage(sender, message)`
-- `api.sendTitle(player, title, subtitle)`
-- `api.sendActionBar(player, message)`
-- `api.broadcast(message)`
-- `api.broadcast(message, permission)`
+- `api.getPlayer(name)` - Get player by name (accepts string or object)
+- `api.getPlayerExact(name)` - Get exact player match (accepts string or object)
+- `api.getPlayerFromSender(sender)` - Convert CommandSender to Player (returns null if not a player)
+- `api.isPlayer(sender)` - Check if CommandSender is a Player
+- `api.getOnlinePlayers()` - Get all online players
+- `api.sendMessage(sender, message)` - Send message to CommandSender
+- `api.sendTitle(player, title, subtitle)` - Send title to player
+- `api.sendTitle(player, title, subtitle, fadeIn, stay, fadeOut)` - Send title with custom timings
+- `api.sendActionBar(player, message)` - Send action bar message
+- `api.broadcast(message)` - Broadcast message to all players
+- `api.broadcast(message, permission)` - Broadcast message to players with permission
+- `api.setHealth(player, health)` - Set player health
+- `api.setFoodLevel(player, level)` - Set player food level
+- `api.setSaturation(player, saturation)` - Set player saturation level (float)
+- `api.getMaxHealth(player)` - Get player's maximum health
+- `api.clearInventory(player)` - Clear player's inventory
 
 ### Inventory Methods
-- `api.createInventory(holder, size, title)`
-- `api.createInventory(holder, type, title)`
-- `api.setInventoryItem(inventory, slot, item)`
-- `api.getInventoryItem(inventory, slot)`
-- `api.fillInventory(inventory, item)`
-- `api.registerInventoryClick(inventory, handler)`
-- `api.registerInventoryClose(inventory, handler)`
+- `api.createInventory(holder, size, title)` - Create inventory with custom holder
+- `api.inventory.createGUI(title, rows)` - Create GUI using builder pattern (recommended)
+- `api.inventory.createInventoryWithHolder(holder, size, title)` - Create inventory with custom holder
+- `api.setInventoryItem(inventory, slot, item)` - Set item in inventory slot
+- `api.getInventoryItem(inventory, slot)` - Get item from inventory slot
+- `api.fillInventory(inventory, item)` - Fill inventory with item
+- `api.registerInventoryClick(inventory, handler)` - Register click handler for inventory
+- `api.registerInventoryClose(inventory, handler)` - Register close handler for inventory
+
+**GUI Builder Example:**
+```javascript
+var gui = api.inventory.createGUI("&6My Menu", 3);
+gui.setItem(10, item1).setItem(12, item2);
+gui.onClick(function(event) { /* handler */ });
+gui.onClose(function(event) { /* handler */ });
+gui.open(player);
+```
 
 ### Item Methods
 - `api.createItemStack(material, amount)`
@@ -686,18 +724,21 @@ this.pluginInfo = pluginInfo;
 - `api.playSound(location, soundName, volume, pitch)`
 
 ### Utility Methods
-- `api.colorize(text)`
-- `api.stripColor(text)`
-- `api.format(format, ...args)`
-- `api.round(value, places)`
-- `api.clamp(value, min, max)`
-- `api.md5(input)`
-- `api.sha256(input)`
-- `api.base64Encode(input)`
-- `api.base64Decode(input)`
-- `api.getCurrentTimeMillis()`
-- `api.formatDate(timestamp)`
-- `api.parseDate(dateString)`
+- `api.colorize(text)` - Convert color codes to formatted text
+- `api.stripColor(text)` - Remove color codes from text
+- `api.format(format, ...args)` - Format string with arguments
+- `api.round(value, places)` - Round number to decimal places
+- `api.clamp(value, min, max)` - Clamp value between min and max
+- `api.getMaterial(materialName)` - Get Material enum from string
+- `api.md5(input)` - Generate MD5 hash
+- `api.sha256(input)` - Generate SHA-256 hash
+- `api.base64Encode(input)` - Encode string to Base64
+- `api.base64Decode(input)` - Decode Base64 string
+- `api.getCurrentTimeMillis()` - Get current timestamp in milliseconds
+- `api.formatDate(timestamp)` - Format timestamp to date string
+- `api.formatDate(timestamp, format)` - Format timestamp with custom format
+- `api.getServerVersion()` - Get server version string
+- `api.getMaxPlayers()` - Get maximum player count
 
 *And many more! Check the source code for the complete list.*
 

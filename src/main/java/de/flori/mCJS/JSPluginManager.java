@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class JSPluginManager {
     private final JavaPlugin plugin;
@@ -19,8 +20,9 @@ public class JSPluginManager {
 
     public JSPluginManager(JavaPlugin plugin) {
         this.plugin = plugin;
-        this.pluginScopes = new HashMap<>();
-        this.pluginMetadata = new HashMap<>();
+        // Use ConcurrentHashMap for thread-safety when plugins are reloaded
+        this.pluginScopes = new ConcurrentHashMap<>();
+        this.pluginMetadata = new ConcurrentHashMap<>();
     }
     
     /**
@@ -130,8 +132,8 @@ public class JSPluginManager {
             Scriptable scope = rhinoContext.initStandardObjects();
             
             // Initialize API
-            debug("Creating JSAPI instance for " + pluginName);
-            JSAPI api = new JSAPI(plugin);
+            debug("Creating MCJSAPI instance for " + pluginName);
+            MCJSAPI api = new MCJSAPI(plugin);
             api.setRhinoScope(scope);
             debug("Setting global properties (api, server, plugin, logger, etc.)");
             ScriptableObject.putProperty(scope, "api", org.mozilla.javascript.Context.javaToJS(api, scope));
