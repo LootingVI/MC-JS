@@ -39,7 +39,7 @@
         nav {
             background: rgba(30, 41, 59, 0.95);
             backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
+            padding: 1.2rem 2rem;
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -48,18 +48,27 @@
         }
 
         nav .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 2rem;
+            gap: 2.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         
         .search-container {
             position: relative;
             flex: 1;
-            max-width: 400px;
+            min-width: 250px;
+            max-width: 500px;
         }
         
         .search-box {
@@ -162,7 +171,7 @@
         }
 
         .logo {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: bold;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
@@ -172,8 +181,16 @@
 
         .nav-links {
             display: flex;
-            gap: 2rem;
+            gap: 1.5rem;
             list-style: none;
+            flex-wrap: wrap;
+            margin: 0;
+            padding: 0;
+            align-items: center;
+        }
+
+        .nav-links li {
+            margin: 0;
         }
 
         .nav-links a {
@@ -181,6 +198,9 @@
             text-decoration: none;
             transition: color 0.3s;
             font-weight: 500;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            padding: 0.3rem 0;
         }
 
         .nav-links a:hover {
@@ -476,18 +496,28 @@
             }
 
             .nav-links {
-                display: none;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1rem;
+                justify-content: center;
+                width: 100%;
             }
             
             .search-container {
                 max-width: 100%;
                 order: -1;
                 width: 100%;
+                margin-bottom: 0.5rem;
             }
             
             nav .container {
                 flex-direction: column;
-                gap: 1rem;
+                gap: 1.5rem;
+                align-items: stretch;
+            }
+            
+            .logo {
+                text-align: center;
             }
 
             .hero h1 {
@@ -1017,7 +1047,7 @@ var food = api.getFoodLevel(player);
 api.setSaturation(player, 5.0);
 
 // Inventory
-api.clearInventory(player);
+api.clearInventory(player); // Clear player inventory (including armor)
 
 // Game Mode
 api.setGameMode(player, GameMode.CREATIVE);
@@ -2055,7 +2085,7 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><td><code>api.getFoodLevel(player)</code></td><td>Get food level</td></tr>
                             <tr><td><code>api.setSaturation(player, saturation)</code></td><td>Set saturation</td></tr>
                             <tr><td><code>api.getSaturation(player)</code></td><td>Get saturation</td></tr>
-                            <tr><td><code>api.clearInventory(player)</code></td><td>Clear player inventory</td></tr>
+                            <tr><td><code>api.clearInventory(player)</code></td><td>Clear player inventory (including armor)</td></tr>
                             <tr><td><code>api.damage(player, damage)</code></td><td>Damage player</td></tr>
                             <tr><td><code>api.setExp(player, exp)</code></td><td>Set experience (0.0-1.0)</td></tr>
                             <tr><td><code>api.getExp(player)</code></td><td>Get experience (0.0-1.0)</td></tr>
@@ -2157,7 +2187,7 @@ this.pluginInfo = pluginInfo;</code></pre>
                             <tr><th>Method</th><th>Description</th></tr>
                             <tr><td><code>api.updateInventoryItem(inv, slot, item)</code></td><td>Update item in custom inventory</td></tr>
                             <tr><td><code>api.getInventoryItem(inv, slot)</code></td><td>Get item from custom inventory</td></tr>
-                            <tr><td><code>api.clearInventory(inv)</code></td><td>Clear custom inventory</td></tr>
+                            <tr><td><code>api.clearInventory(inventory)</code></td><td>Clear custom inventory (GUI)</td></tr>
                             <tr><td><code>api.refreshInventory(inv)</code></td><td>Refresh/rebuild custom inventory</td></tr>
                             <tr><td><code>api.isInventorySlotEmpty(inv, slot)</code></td><td>Check if slot is empty</td></tr>
                             <tr><td><code>api.getFirstEmptySlot(inv)</code></td><td>Get first empty slot</td></tr>

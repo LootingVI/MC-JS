@@ -248,7 +248,7 @@ api.setSaturation(player, 20.0); // Set saturation level
 api.setGameMode(player, api.getMaterial("CREATIVE")); // Use GameMode enum
 api.teleport(player, location);
 
-// Clear player inventory
+// Clear player inventory (including armor)
 api.clearInventory(player);
 ```
 
@@ -654,7 +654,7 @@ this.pluginInfo = pluginInfo;
 - `api.setFoodLevel(player, level)` - Set player food level
 - `api.setSaturation(player, saturation)` - Set player saturation level (float)
 - `api.getMaxHealth(player)` - Get player's maximum health
-- `api.clearInventory(player)` - Clear player's inventory
+- `api.clearInventory(player)` - Clear player's inventory (including armor)
 
 ### Inventory Methods
 - `api.createInventory(holder, size, title)` - Create inventory with custom holder
