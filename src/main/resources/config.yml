@@ -39,3 +39,19 @@ security:
   allowed-paths:
     - "plugins/MC-JS/js-plugins/"
     - "plugins/MC-JS/data/"
+
+# Plugin Browser Settings
+plugin-browser:
+  # URL of the central plugin browser server
+  # This is a shared server for all MC-JS users
+  # Default: Official MC-JS Plugin Browser (if available)
+  url: "https://browser.flori.tv"
+  
+  # Enable plugin browser features
+  enabled: true
+  
+  # Note: Use /pluginbrowser command in-game to browse and install plugins
+  # The plugin-browser.js plugin must be loaded for in-game features
+  # 
+  # The plugin browser is shared - all users can upload and download plugins
+  # Plugins are reviewed before being published for security

@@ -14,9 +14,7 @@ public final class MCJS extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         getLogger().info("========================================");
-        @SuppressWarnings("deprecation")
-        String version = getDescription().getVersion();
-        getLogger().info("MC-JS Plugin v" + version + " enabled!");
+        getLogger().info(Version.getVersionInfo() + " enabled!");
         getLogger().info("Using Rhino JavaScript Engine");
         getLogger().info("========================================");
 

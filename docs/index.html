@@ -766,6 +766,10 @@ var pluginInfo = {
     description: "My awesome first plugin!"
 };
 
+// Get MC-JS version
+var mcjsVersion = api.getMCJSVersion();
+logger.info("Running on MC-JS " + mcjsVersion);
+
 function onEnable() {
     logger.info("My plugin is enabled!");
     
@@ -2459,6 +2463,7 @@ this.pluginInfo = pluginInfo;</code></pre>
                         <h4>Server & Plugin Methods</h4>
                         <table>
                             <tr><th>Method</th><th>Description</th></tr>
+                            <tr><td><code>api.getMCJSVersion()</code></td><td>Get MC-JS plugin version</td></tr>
                             <tr><td><code>api.getServerVersion()</code></td><td>Get server version</td></tr>
                             <tr><td><code>api.getBukkitVersion()</code></td><td>Get Bukkit version</td></tr>
                             <tr><td><code>api.getMaxPlayers()</code></td><td>Get max players</td></tr>

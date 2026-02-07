@@ -28,6 +28,7 @@ public class MCJSAPI {
     public final NetworkAPI network;
     public final ScoreboardAPI scoreboard;
     public final SoundParticleAPI soundParticle;
+    public final PluginBrowserAPI pluginBrowser;
     
     public MCJSAPI(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -49,6 +50,7 @@ public class MCJSAPI {
         this.network = new NetworkAPI(plugin);
         this.scoreboard = new ScoreboardAPI(plugin);
         this.soundParticle = new SoundParticleAPI(plugin);
+        this.pluginBrowser = new PluginBrowserAPI(plugin, this.network);
         
         // Set up cross-module references
         this.event.setInventoryAPI(this.inventory);
@@ -211,6 +213,11 @@ public class MCJSAPI {
         return this.item.setItemLore(item, lore);
     }
     
+    // ===== Inventory/GUI Methods =====
+    public de.flori.mCJS.api.InventoryAPI.InventoryGUI createGUI(String title, int rows) {
+        return inventory.createGUI(title, rows);
+    }
+    
     // ===== Material Methods =====
     public org.bukkit.Material getMaterial(Object materialName) {
         return utility.getMaterial(materialName);
@@ -254,6 +261,14 @@ public class MCJSAPI {
         return file.loadJsonFile(fileName);
     }
     
+    public java.io.File getPluginFile(String fileName) {
+        return file.getPluginFile(fileName);
+    }
+    
+    public boolean pluginFileExists(String fileName) {
+        return file.pluginFileExists(fileName);
+    }
+    
     // ===== Database Methods =====
     public void createTable(String dbName, String tableName, java.util.Map<String, String> columns) {
         database.createTable(dbName, tableName, columns);
@@ -270,6 +285,10 @@ public class MCJSAPI {
     // ===== Utility Methods =====
     public long getCurrentTimeMillis() {
         return utility.getCurrentTimeMillis();
+    }
+    
+    public String getMCJSVersion() {
+        return utility.getMCJSVersion();
     }
     
     public String getServerVersion() {
@@ -311,6 +330,47 @@ public class MCJSAPI {
     
     public org.bukkit.entity.Player getPlayerFromSender(org.bukkit.command.CommandSender sender) {
         return utility.getPlayerFromSender(sender);
+    }
+    
+    // ===== Plugin Browser Methods =====
+    public java.util.List<java.util.Map<String, Object>> searchPlugins(String query, String category) {
+        return pluginBrowser.searchPlugins(query, category);
+    }
+    
+    public java.util.Map<String, Object> getPluginDetails(int pluginId) {
+        return pluginBrowser.getPluginDetails(pluginId);
+    }
+    
+    public boolean installPlugin(int pluginId, String fileName) {
+        return pluginBrowser.installPlugin(pluginId, fileName);
+    }
+    
+    public boolean submitReview(int pluginId, String author, int rating, String comment) {
+        return pluginBrowser.submitReview(pluginId, author, rating, comment);
+    }
+    
+    public boolean reportPlugin(int pluginId, String reporter, String reason) {
+        return pluginBrowser.reportPlugin(pluginId, reporter, reason);
+    }
+    
+    public java.util.List<java.util.Map<String, Object>> getPluginReviews(int pluginId) {
+        return pluginBrowser.getPluginReviews(pluginId);
+    }
+    
+    public void setBrowserUrl(String url) {
+        pluginBrowser.setBrowserUrl(url);
+    }
+    
+    public String getBrowserUrl() {
+        return pluginBrowser.getBrowserUrl();
+    }
+    
+    public java.util.Map<String, Object> uploadPlugin(java.io.File pluginFile, String name, String version, String author, String description, String category, String uploader, String uploaderName) {
+        return pluginBrowser.uploadPlugin(pluginFile, name, version, author, description, category, uploader, uploaderName);
+    }
+    
+    public java.util.Map<String, Object> extractPluginMetadata(java.io.File pluginFile) {
+        return pluginBrowser.extractPluginMetadata(pluginFile);
     }
     
     // ===== Event Methods =====

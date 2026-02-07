@@ -73,6 +73,10 @@ public class UtilityAPI extends BaseAPI {
     }
     
     // ===== SERVER METHODS =====
+    public String getMCJSVersion() {
+        return de.flori.mCJS.Version.getVersion();
+    }
+    
     public String getServerVersion() {
         return plugin.getServer().getVersion();
     }

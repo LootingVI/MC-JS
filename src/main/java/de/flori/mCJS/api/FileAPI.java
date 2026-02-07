@@ -199,6 +199,22 @@ public class FileAPI extends BaseAPI {
         }
     }
 
+    /**
+     * Get a File object for a plugin file in js-plugins directory
+     */
+    public File getPluginFile(String fileName) {
+        File pluginsDir = new File(plugin.getDataFolder(), "js-plugins");
+        File pluginFile = new File(pluginsDir, fileName.endsWith(".js") ? fileName : fileName + ".js");
+        return pluginFile;
+    }
+    
+    /**
+     * Check if a plugin file exists
+     */
+    public boolean pluginFileExists(String fileName) {
+        return getPluginFile(fileName).exists();
+    }
+    
     public boolean textFileExists(String fileName) {
         File file = new File(plugin.getDataFolder(), fileName + ".txt");
         return file.exists();
