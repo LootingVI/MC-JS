@@ -1,0 +1,8 @@
+target/
+node_modules/
+.tools/
+dashboard/node_modules/
+dashboard/test-results/
+dashboard/playwright-report/
+.idea/
+*.iml

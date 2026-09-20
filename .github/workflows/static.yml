@@ -1,5 +1,5 @@
-# Deploy /docs folder to GitHub Pages using the official GitHub Pages Actions
-# Trigger: push to main (oder passe den Branch an), oder manuelles Auslösen
+
+
 name: Deploy Docs to GitHub Pages
 
 on:

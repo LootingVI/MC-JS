@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>MC-JS · Plugin Studio</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <section id="gate" class="gate">
+    <div class="brand"><span class="brand-icon">M<span>J</span></span><div>MC-JS <span class="muted">/ Plugin Studio</span></div></div>
+    <div class="gate-card">
+      <div class="eyebrow">YOUR SERVER. YOUR IDEAS.</div>
+      <h1>From thought<br>to plugin.</h1>
+      <p id="gate-text">Connect your Minecraft account to edit your plugins.</p>
+      <div class="steps"><span class="step done">1 · Open the link</span><span id="verify-step" class="step">2 · Confirm in game</span><span class="step">3 · Start building</span></div>
+      <div id="verification" hidden>
+        <label for="verify-command">Run this command in the game:</label>
+        <div class="command-copy"><input id="verify-command" readonly spellcheck="false"><button id="copy-command" type="button">Copy</button></div>
+        <p class="muted"><span class="pulse"></span> Waiting for confirmation from <strong id="verify-player"></strong> …</p>
+      </div>
+      <p id="gate-error" role="alert"></p>
+      <div class="gate-note">Start in the game with <code>/mjs dashboard</code>.<br>You need the permission <code>mcjs.dashboard</code>.</div>
+    </div>
+    <footer>JavaScript for Minecraft <span>Write code. Connect blocks. Change worlds.</span></footer>
+  </section>
+  <div id="studio" class="studio" hidden>
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-icon">M<span>J</span></span><div>MC-JS<small>PLUGIN STUDIO</small></div></div>
+      <button id="new-plugin" class="primary wide">＋ New plugin</button>
+      <label class="search"><span>⌕</span><input id="search" placeholder="Search plugins" aria-label="Search plugins"></label>
+      <div class="section-label">YOUR PLUGINS <span id="plugin-count">0</span><button id="refresh" title="Refresh plugin list" aria-label="Refresh plugin list">↻</button></div>
+      <nav id="plugin-list" aria-label="Plugins"></nav>
+      <div class="sidebar-bottom"><span class="pulse"></span> Connected to server<small id="account"></small><button id="logout">Sign out ↗</button></div>
+    </aside>
+    <main>
+      <header class="topbar"><div><span class="muted">Workspace / </span><strong id="breadcrumb">Overview</strong></div><div class="topbar-actions"><button id="docs-button" class="docs-toggle" title="Open the API reference" aria-label="Open the API reference">? Docs</button><span class="session-label" id="session-label"></span></div></header>
+      <section id="welcome" class="welcome">
+        <div class="eyebrow">YOUR NEXT SERVER FEATURE</div>
+        <h1>What will you build today?</h1>
+        <p>Build complete server systems with blocks.<br>Connect commands, menus, saved player data and reusable actions.</p>
+        <div id="system-gallery" class="system-gallery"></div>
+        <h2 class="starter-heading">Or start from a blank canvas</h2>
+        <div class="template-grid">
+          <button class="template" data-template="welcome"><span class="template-icon">✦</span><small>QUICK START</small><h2>Welcome players</h2><p>A personal message when someone joins your server.</p><b>Start with blocks ↗</b></button>
+          <button class="template" data-template="command"><span class="template-icon purple">/</span><small>YOUR RULES</small><h2>Custom command</h2><p>Create new commands and control them with permissions.</p><b>Start with blocks ↗</b></button>
+          <button class="template" data-template="code"><span class="template-icon blue">{ }</span><small>FULL CONTROL</small><h2>Start with code</h2><p>The entire MC-JS API in your JavaScript editor.</p><b>Open the code editor ↗</b></button>
+        </div>
+        <div class="tip"><span>↳</span><p><strong>No code? No problem.</strong><br>Connect events and actions like puzzle pieces. Your plugin is generated from them automatically.</p></div>
+      </section>
+      <section id="project" class="project" hidden>
+        <div class="project-heading"><div><div class="eyebrow">PLUGIN WORKSPACE</div><h1><span id="project-title"></span><span id="dirty-dot" title="Unsaved changes" hidden>●</span></h1></div><span id="runtime-state" class="badge">Draft</span></div>
+        <div class="toolbar"><div class="mode-tabs" role="group" aria-label="Editor mode"><button id="mode-blocks">◈ Blocks</button><button id="mode-code">{ } Code</button></div><div class="actions"><button id="detach-code" hidden>Edit code</button><button id="validate">✓ Check</button><button id="save">Save</button><button id="run" class="primary">▶ Save & start</button><button id="more" title="More actions" aria-label="More actions">•••</button></div></div>
+        <div id="more-menu" class="more-menu" hidden><button id="stop">Stop plugin</button><button id="export">Export JavaScript</button><button id="export-project">Export block project</button><button id="delete" class="danger">Delete plugin</button></div>
+        <div id="block-controls" class="block-controls"><label>Display name<input id="meta-name" maxlength="80"></label><label>Version<input id="meta-version" maxlength="32" value="1.0.0"></label><label>Author<input id="meta-author" maxlength="64"></label><span>Drag blocks from the left toolbar onto the canvas.</span></div>
+        <div class="studio-tools"><button id="open-menu-designer">▦ Menu designer</button><button id="open-state-editor">⇄ State editor</button><button id="open-block-library">▣ Block library</button><button id="open-data-inspector">Data inspector</button><button id="open-debugger">Block debugger</button><span id="vault-status">Vault · checking …</span></div>
+        <div id="builder-tools" class="builder-tools"><input id="block-search" type="search" placeholder="Find blocks: menu, coins, location …" aria-label="Search blocks"><select id="flow-select" aria-label="Jump to a flow"><option value="">Jump to a flow …</option></select><button id="fit-blocks">Fit all</button><button id="arrange-blocks">Arrange</button><button id="builder-help">Builder guide</button></div>
+        <div class="editor-shell"><div id="block-editor"></div><div id="code-editor" hidden></div></div>
+        <div class="editor-footer"><span id="editor-hint">Blocks become JavaScript.</span><span>Rhino · JavaScript ES6</span></div>
+        <div id="builder-feedback" class="builder-feedback"><div id="block-status" role="status"></div><p id="system-note" hidden></p><div id="block-problems" hidden></div></div>
+        <div class="console"><div class="section-label">ACTIVITY <button id="clear-log">Clear</button></div><div id="activity" role="log" aria-live="polite"></div></div>
+      </section>
+    </main>
+  </div>
+  <dialog id="create-dialog"><form id="create-form"><div class="eyebrow">A NEW IDEA</div><h2>Create plugin</h2><p>Give your plugin a file name.</p><label>File name<div class="filename-input"><input id="new-name" required pattern="[A-Za-z0-9][A-Za-z0-9_-]{0,63}" maxlength="64" placeholder="my-plugin" autocomplete="off"><span>.js</span></div></label><label>Starting point<select id="new-template"><optgroup id="system-options" label="Complete systems"></optgroup><optgroup label="Starting points"><option value="welcome">Blocks · Welcome players</option><option value="command">Blocks · Custom command</option><option value="empty">Blocks · Empty plugin</option><option value="code">Code · JavaScript</option></optgroup></select></label><p id="template-description"></p><label class="import-label">Or import .js / .mcjs.json<input id="import-file" type="file" accept=".js,.json"></label><p id="create-error" role="alert"></p><div class="dialog-actions"><button type="button" id="cancel-create">Cancel</button><button class="primary" type="submit">Create ↗</button></div></form></dialog>
+  <dialog id="builder-guide" class="builder-guide"><div class="docs-heading"><div><div class="eyebrow">FROM BLOCKS TO SYSTEMS</div><h2>Build your own server feature</h2></div><button id="builder-close" aria-label="Close builder guide">✕</button></div><div class="guide-content">
+    <section><h3>1. Choose what starts the flow</h3><p>Use a command, event or timer. A command's permission field controls who can run it. Command arguments start at 1. Use a subcommand block for commands such as <code>/coins balance</code>.</p></section>
+    <section><h3>2. Choose the player</h3><p>Commands and player events provide the current player. Timers need <strong>For each online player</strong> or <strong>Run as player</strong>. For a mob death, get the event entity, then its killer, and run as that player. Missing players are skipped.</p></section>
+    <section><h3>3. Remember progress</h3><p>Persistent data stores numbers, text, booleans, lists and records across restarts. Player values use UUIDs; global values are shared by this plugin. Different plugins have separate data, including coins. Use records for profiles and location records for homes. Ordinary variables are temporary and shared; use saved player data for individual progress.</p></section>
+    <section><h3>4. Reuse actions</h3><p>Create a named Function, then call it from commands, events or buttons. Pass the target player and optional data. The Function has its own current player and input data. Use Return value when another block needs its result.</p></section>
+    <section><h3>5. Build interactive menus</h3><p>Place Menu button and Fill empty slots blocks inside Open menu. Each row has 9 slots, starting at 0. Put actions inside the button's click area. Clicks run for the clicking player on the next tick. Open another menu from a button to create pages. Menu items cannot be taken.</p></section>
+    <section><h3>6. Add rules and rewards</h3><p>Combine conditions, loops and saved data. Buy item checks saved currency and inventory space. Claim kit checks cooldowns and grants the whole list or keeps it available. Observe successful event ignores cancelled actions, making it suitable for quests. General cooldown blocks claim time before running their actions.</p></section>
+    <section><h3>7. Check and start</h3><p>Click a block issue to jump to it. Check validates connections and generated syntax. Save &amp; start applies your system to the server. Export the block project to keep an editable copy. Runtime callback errors appear in the server console.</p></section>
+  </div></dialog>
+  <dialog id="confirm-dialog"><form method="dialog"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="dialog-actions"><button value="cancel">Cancel</button><button id="confirm-accept" class="primary" value="ok">Continue</button></div></form></dialog>
+  <dialog id="docs-dialog" class="docs-dialog">
+    <div class="docs-heading"><div><div class="eyebrow">MC-JS API REFERENCE</div><h2>API &amp; guides</h2></div><button id="docs-close" aria-label="Close docs">✕</button></div>
+    <label class="docs-search"><span>⌕</span><input id="docs-search" placeholder="Search functions, events, blocks …" autocomplete="off"></label>
+    <div id="docs-content" class="docs-content"></div>
+  </dialog>
+  <noscript>Enable JavaScript to use the MC-JS dashboard.</noscript>
+</body>
+</html>

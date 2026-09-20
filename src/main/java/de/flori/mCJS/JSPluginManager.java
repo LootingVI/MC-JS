@@ -17,24 +17,26 @@ public class JSPluginManager {
     private final JavaPlugin plugin;
     private final Map<String, Scriptable> pluginScopes;
     private final Map<String, PluginMetadata> pluginMetadata;
+    private final Map<String, MCJSAPI> pluginApis;
+    private final Map<String, de.flori.mCJS.api.DebugAPI> debuggers = new ConcurrentHashMap<>();
+
+    public de.flori.mCJS.api.DebugAPI debugger(String name) {
+        de.flori.mCJS.dashboard.PluginWorkspace.validateName(name);
+        return debuggers.computeIfAbsent(name, key -> new de.flori.mCJS.api.DebugAPI());
+    }
 
     public JSPluginManager(JavaPlugin plugin) {
         this.plugin = plugin;
-        // Use ConcurrentHashMap for thread-safety when plugins are reloaded
+
         this.pluginScopes = new ConcurrentHashMap<>();
         this.pluginMetadata = new ConcurrentHashMap<>();
+        this.pluginApis = new ConcurrentHashMap<>();
     }
-    
-    /**
-     * Check if debug mode is enabled in config
-     */
+
     private boolean isDebugMode() {
         return plugin.getConfig().getBoolean("settings.debug-mode", false);
     }
-    
-    /**
-     * Debug logging helper
-     */
+
     private void debug(String message) {
         if (isDebugMode()) {
             plugin.getLogger().info("[DEBUG] " + message);
@@ -48,8 +50,7 @@ public class JSPluginManager {
             jsPluginsDir.mkdirs();
             plugin.getLogger().info("Created js-plugins directory: " + jsPluginsDir.getAbsolutePath());
             debug("Created js-plugins directory: " + jsPluginsDir.getAbsolutePath());
-            
-            // Copy example plugin if it doesn't exist and is enabled in config
+
             if (isExamplePluginEnabled()) {
                 try {
                     File exampleFile = new File(jsPluginsDir, "example.js");
@@ -65,11 +66,10 @@ public class JSPluginManager {
             }
         }
 
-        // Load plugins from directory
         plugin.getLogger().info("Scanning for JS plugins in: " + jsPluginsDir.getAbsolutePath());
         debug("Scanning directory: " + jsPluginsDir.getAbsolutePath());
         File[] pluginFiles = jsPluginsDir.listFiles((dir, name) -> name.endsWith(".js"));
-        
+
         if (pluginFiles == null || pluginFiles.length == 0) {
             plugin.getLogger().info("No JS plugins found in js-plugins directory");
             debug("No .js files found in directory");
@@ -78,22 +78,20 @@ public class JSPluginManager {
 
         plugin.getLogger().info("Found " + pluginFiles.length + " JS plugin file(s)");
         debug("Found " + pluginFiles.length + " plugin file(s) to process");
-        
-        // Sort plugins by load-order if specified
+
         java.util.List<File> sortedPlugins = sortPluginsByLoadOrder(pluginFiles);
-        
+
         for (File pluginFile : sortedPlugins) {
             try {
                 String pluginName = pluginFile.getName().replace(".js", "");
                 debug("Processing plugin file: " + pluginFile.getName() + " (name: " + pluginName + ")");
-                
-                // Check if plugin is disabled in config
+
                 if (isPluginDisabled(pluginName)) {
                     plugin.getLogger().info("Skipping disabled plugin: " + pluginFile.getName());
                     debug("Plugin " + pluginName + " is disabled in config, skipping");
                     continue;
                 }
-                
+
                 plugin.getLogger().info("Loading JS plugin: " + pluginFile.getName());
                 debug("Starting load process for plugin: " + pluginName);
                 loadPlugin(pluginFile);
@@ -107,136 +105,47 @@ public class JSPluginManager {
 
     private void loadPlugin(File pluginFile) throws IOException {
         String pluginName = pluginFile.getName().replace(".js", "");
-        debug("Reading script content from file: " + pluginFile.getAbsolutePath());
-        String script = Files.readString(Path.of(pluginFile.toURI()));
-
-        if (script == null || script.trim().isEmpty()) {
-            plugin.getLogger().warning("Plugin file " + pluginFile.getName() + " is empty, skipping");
-            debug("Script content is empty for " + pluginName);
-            return;
-        }
-        
-        debug("Script size: " + script.length() + " characters");
-
-        // Create a new Rhino context for this plugin (isolated execution)
-        debug("Creating Rhino context for " + pluginName);
-        org.mozilla.javascript.Context rhinoContext = org.mozilla.javascript.Context.enter();
-        int optimizationLevel = plugin.getConfig().getInt("performance.optimization-level", -1);
-        debug("Setting optimization level to: " + optimizationLevel);
-        rhinoContext.setOptimizationLevel(optimizationLevel);
-        rhinoContext.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
-
-        try {
-            // Create a new scope for this plugin
-            debug("Initializing standard objects for " + pluginName);
-            Scriptable scope = rhinoContext.initStandardObjects();
-            
-            // Initialize API
-            debug("Creating MCJSAPI instance for " + pluginName);
-            MCJSAPI api = new MCJSAPI(plugin);
+        String script = Files.readString(pluginFile.toPath());
+        if (script.isBlank()) throw new IOException("Plugin is empty: " + pluginName);
+        var debugger = debugger(pluginName);
+        debugger.generation(de.flori.mCJS.dashboard.PluginWorkspace.revision(script));
+        MCJSAPI api = new MCJSAPI(plugin, debugger);
+        try (org.mozilla.javascript.Context context = org.mozilla.javascript.Context.enter()) {
+            context.setOptimizationLevel(plugin.getConfig().getInt("performance.optimization-level", -1));
+            context.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+            Scriptable scope = context.initStandardObjects();
             api.setRhinoScope(scope);
-            debug("Setting global properties (api, server, plugin, logger, etc.)");
-            ScriptableObject.putProperty(scope, "api", org.mozilla.javascript.Context.javaToJS(api, scope));
-            ScriptableObject.putProperty(scope, "server", org.mozilla.javascript.Context.javaToJS(plugin.getServer(), scope));
-            ScriptableObject.putProperty(scope, "plugin", org.mozilla.javascript.Context.javaToJS(plugin, scope));
-            ScriptableObject.putProperty(scope, "logger", org.mozilla.javascript.Context.javaToJS(plugin.getLogger(), scope));
-            ScriptableObject.putProperty(scope, "scheduler", org.mozilla.javascript.Context.javaToJS(plugin.getServer().getScheduler(), scope));
-            ScriptableObject.putProperty(scope, "Bukkit", org.mozilla.javascript.Context.javaToJS(plugin.getServer(), scope));
-            ScriptableObject.putProperty(scope, "Java", org.mozilla.javascript.Context.javaToJS(java.lang.System.class, scope));
-            
-            // Make Bukkit classes available
-            debug("Making Bukkit classes available");
-            ScriptableObject.putProperty(scope, "Player", org.mozilla.javascript.Context.javaToJS(org.bukkit.entity.Player.class, scope));
-            ScriptableObject.putProperty(scope, "Entity", org.mozilla.javascript.Context.javaToJS(org.bukkit.entity.Entity.class, scope));
-            ScriptableObject.putProperty(scope, "Material", org.mozilla.javascript.Context.javaToJS(org.bukkit.Material.class, scope));
-            ScriptableObject.putProperty(scope, "ChatColor", org.mozilla.javascript.Context.javaToJS(org.bukkit.ChatColor.class, scope));
-            ScriptableObject.putProperty(scope, "Location", org.mozilla.javascript.Context.javaToJS(org.bukkit.Location.class, scope));
-            ScriptableObject.putProperty(scope, "World", org.mozilla.javascript.Context.javaToJS(org.bukkit.World.class, scope));
-            ScriptableObject.putProperty(scope, "Block", org.mozilla.javascript.Context.javaToJS(org.bukkit.block.Block.class, scope));
-            ScriptableObject.putProperty(scope, "ItemStack", org.mozilla.javascript.Context.javaToJS(org.bukkit.inventory.ItemStack.class, scope));
-            ScriptableObject.putProperty(scope, "InventoryType", org.mozilla.javascript.Context.javaToJS(org.bukkit.event.inventory.InventoryType.class, scope));
-            ScriptableObject.putProperty(scope, "GameMode", org.mozilla.javascript.Context.javaToJS(org.bukkit.GameMode.class, scope));
-            ScriptableObject.putProperty(scope, "PotionEffectType", org.mozilla.javascript.Context.javaToJS(org.bukkit.potion.PotionEffectType.class, scope));
-            ScriptableObject.putProperty(scope, "Sound", org.mozilla.javascript.Context.javaToJS(org.bukkit.Sound.class, scope));
-            ScriptableObject.putProperty(scope, "EventPriority", org.mozilla.javascript.Context.javaToJS(org.bukkit.event.EventPriority.class, scope));
-            ScriptableObject.putProperty(scope, "CommandSender", org.mozilla.javascript.Context.javaToJS(org.bukkit.command.CommandSender.class, scope));
-            ScriptableObject.putProperty(scope, "OfflinePlayer", org.mozilla.javascript.Context.javaToJS(org.bukkit.OfflinePlayer.class, scope));
-
-            // Execute the script
-            debug("Executing script for " + pluginName);
-            rhinoContext.evaluateString(scope, script, pluginFile.getName(), 1, null);
-            debug("Script execution completed for " + pluginName);
-
-            // Store scope (we don't need to store context - it's thread-local and we'll create new ones as needed)
+            Map<String, Object> globals = new java.util.LinkedHashMap<>();
+            globals.put("api", api);
+            globals.put("server", plugin.getServer());
+            globals.put("plugin", plugin);
+            globals.put("logger", plugin.getLogger());
+            globals.put("scheduler", plugin.getServer().getScheduler());
+            globals.put("Bukkit", plugin.getServer());
+            globals.put("Java", java.lang.System.class);
+            for (Class<?> type : new Class<?>[]{org.bukkit.entity.Player.class, org.bukkit.entity.Entity.class,
+                    org.bukkit.Material.class, org.bukkit.ChatColor.class, org.bukkit.Location.class, org.bukkit.World.class,
+                    org.bukkit.block.Block.class, org.bukkit.inventory.ItemStack.class, org.bukkit.event.inventory.InventoryType.class,
+                    org.bukkit.GameMode.class, org.bukkit.potion.PotionEffectType.class, org.bukkit.Sound.class,
+                    org.bukkit.event.EventPriority.class, org.bukkit.command.CommandSender.class, org.bukkit.OfflinePlayer.class}) {
+                globals.put(type.getSimpleName(), type);
+            }
+            globals.forEach((key, value) -> ScriptableObject.putProperty(scope, key,
+                    org.mozilla.javascript.Context.javaToJS(value, scope)));
+            context.evaluateString(scope, script, pluginFile.getName(), 1, null);
+            Object onEnable = ScriptableObject.getProperty(scope, "onEnable");
+            if (onEnable instanceof Function function) function.call(context, scope, scope, new Object[0]);
             pluginScopes.put(pluginName, scope);
-
-            // Extract metadata if available
-            debug("Extracting metadata for " + pluginName);
-            PluginMetadata metadata = extractMetadata(scope, pluginName);
-            pluginMetadata.put(pluginName, metadata);
-            if (metadata.getVersion() != null) {
-                debug("Plugin " + pluginName + " metadata: version=" + metadata.getVersion() + 
-                      (metadata.getAuthor() != null ? ", author=" + metadata.getAuthor() : ""));
-            }
-
-            // Call onEnable if it exists (BEFORE exiting the context!)
-            // In Rhino, functions defined with 'function onEnable()' are available directly in scope
-            // And 'this.onEnable = onEnable' also makes it available as a property
-            debug("Looking for onEnable function in " + pluginName);
-            Object onEnableObj = null;
+            pluginApis.put(pluginName, api);
+            pluginMetadata.put(pluginName, extractMetadata(scope, pluginName));
+            plugin.getLogger().info("Loaded JS plugin: " + pluginName);
+        } catch (Exception error) {
             try {
-                // Try to get the function from scope
-                onEnableObj = scope.get("onEnable", scope);
-                debug("onEnable object found: " + (onEnableObj != null ? onEnableObj.getClass().getName() : "null"));
-                
-                // If not a function, try ScriptableObject.getProperty
-                if (!(onEnableObj instanceof Function)) {
-                    try {
-                        onEnableObj = ScriptableObject.getProperty(scope, "onEnable");
-                    } catch (Exception e) {
-                        // Ignore
-                    }
-                }
-            } catch (Exception e) {
-                plugin.getLogger().fine("Could not find onEnable function: " + e.getMessage());
+                api.unload();
+            } catch (Exception cleanup) {
+                error.addSuppressed(cleanup);
             }
-            
-            if (onEnableObj instanceof Function) {
-                try {
-                    debug("Calling onEnable() for " + pluginName);
-                    Function onEnable = (Function) onEnableObj;
-                    onEnable.call(rhinoContext, scope, scope, new Object[0]);
-                    debug("onEnable() completed successfully for " + pluginName);
-                    plugin.getLogger().info("Loaded JS plugin: " + pluginName + 
-                        (metadata.getVersion() != null ? " v" + metadata.getVersion() : ""));
-                } catch (Exception e) {
-                    plugin.getLogger().warning("Error calling onEnable for plugin " + pluginName + ": " + e.getMessage());
-                    debug("Error in onEnable() for " + pluginName + ": " + e.getMessage());
-                    e.printStackTrace();
-                }
-            } else {
-                // Log what we found for debugging
-                if (onEnableObj != null) {
-                    plugin.getLogger().info("onEnable found but is not a Function: " + onEnableObj.getClass().getName());
-                    debug("onEnable is not a Function for " + pluginName + ": " + onEnableObj.getClass().getName());
-                } else {
-                    debug("No onEnable function found for " + pluginName);
-                }
-                plugin.getLogger().info("Loaded JS plugin: " + pluginName + 
-                    (metadata.getVersion() != null ? " v" + metadata.getVersion() : "") + " (no onEnable function found)");
-            }
-            
-            // Exit the context AFTER onEnable has been called
-            // We'll create new contexts for callbacks as needed
-            org.mozilla.javascript.Context.exit();
-        } catch (Exception e) {
-            // Make sure to exit context even on error
-            try {
-                org.mozilla.javascript.Context.exit();
-            } catch (Exception ex) {
-                // Ignore if context was already exited
-            }
-            throw new IOException("Failed to execute script: " + e.getMessage(), e);
+            throw new IOException("Failed to execute " + pluginName + ": " + error.getMessage(), error);
         }
     }
 
@@ -264,7 +173,7 @@ public class JSPluginManager {
                 }
             }
         } catch (Exception e) {
-            // Metadata extraction failed, use defaults
+
         }
         return metadata;
     }
@@ -276,24 +185,24 @@ public class JSPluginManager {
                 String pluginName = entry.getKey();
                 debug("Unloading plugin: " + pluginName);
                 Scriptable scope = entry.getValue();
-                
+
                 if (scope != null) {
-                    // Create a new context for onDisable
+
                     org.mozilla.javascript.Context context = org.mozilla.javascript.Context.enter();
                     try {
                         context.setOptimizationLevel(-1);
                         context.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
-                        
+
                         Object onDisableObj = scope.get("onDisable", scope);
                         if (onDisableObj == null || !(onDisableObj instanceof Function)) {
-                            // Try to get from 'this'
+
                             Object thisObj = scope.get("this", scope);
                             if (thisObj instanceof Scriptable) {
                                 Scriptable thisScope = (Scriptable) thisObj;
                                 onDisableObj = thisScope.get("onDisable", thisScope);
                             }
                         }
-                        
+
                         if (onDisableObj instanceof Function) {
                             try {
                                 debug("Calling onDisable() for " + pluginName);
@@ -311,6 +220,10 @@ public class JSPluginManager {
                         org.mozilla.javascript.Context.exit();
                     }
                 }
+                MCJSAPI api = pluginApis.remove(pluginName);
+                if (api != null) {
+                    api.unload();
+                }
             } catch (Exception e) {
                 plugin.getLogger().severe("Error disabling JS plugin: " + entry.getKey() + " - " + e.getMessage());
                 e.printStackTrace();
@@ -318,6 +231,7 @@ public class JSPluginManager {
         }
         pluginScopes.clear();
         pluginMetadata.clear();
+        pluginApis.clear();
     }
 
     public Scriptable getPluginScope(String name) {
@@ -336,53 +250,53 @@ public class JSPluginManager {
         return pluginMetadata.get(pluginName);
     }
 
-    public void reloadPlugin(String pluginName) {
-        Scriptable scope = pluginScopes.get(pluginName);
-        
-        if (scope != null) {
-            try {
-                // Create a new context for onDisable
-                org.mozilla.javascript.Context context = org.mozilla.javascript.Context.enter();
-                try {
+    public void unloadPlugin(String pluginName) {
+        Scriptable scope = pluginScopes.remove(pluginName);
+        try {
+            if (scope != null) {
+                try (org.mozilla.javascript.Context context = org.mozilla.javascript.Context.enter()) {
                     context.setOptimizationLevel(-1);
                     context.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
-                    
-                    Object onDisableObj = scope.get("onDisable", scope);
-                    if (onDisableObj instanceof Function) {
-                        Function onDisable = (Function) onDisableObj;
-                        onDisable.call(context, scope, scope, new Object[0]);
-                    }
-                } finally {
-                    org.mozilla.javascript.Context.exit();
+                    Object onDisable = ScriptableObject.getProperty(scope, "onDisable");
+                    if (onDisable instanceof Function function) function.call(context, scope, scope, new Object[0]);
                 }
-            } catch (Exception e) {
-                plugin.getLogger().warning("Error disabling plugin during reload: " + e.getMessage());
             }
-            pluginScopes.remove(pluginName);
-            pluginMetadata.remove(pluginName);
-        }
-
-        // Reload the plugin file
-        File pluginFile = new File(plugin.getDataFolder(), "js-plugins/" + pluginName + ".js");
-        if (pluginFile.exists()) {
+        } catch (Exception error) {
+            plugin.getLogger().warning("Error disabling " + pluginName + ": " + error.getMessage());
+        } finally {
+            MCJSAPI api = pluginApis.remove(pluginName);
             try {
-                loadPlugin(pluginFile);
-            } catch (Exception e) {
-                plugin.getLogger().severe("Failed to reload plugin " + pluginName + ": " + e.getMessage());
+                if (api != null) api.unload();
+            } finally {
+                pluginMetadata.remove(pluginName);
             }
         }
     }
 
-    /**
-     * Check if a plugin is disabled in the config
-     */
-    private boolean isPluginDisabled(String pluginName) {
-        // Check if example plugin is disabled
-        if (pluginName.equalsIgnoreCase("example")) {
-            return !isExamplePluginEnabled();
+    public void activatePlugin(String pluginName) throws IOException {
+        de.flori.mCJS.dashboard.PluginWorkspace.validateName(pluginName);
+        if (isPluginDisabled(pluginName)) throw new IOException("Plugin is disabled in config: " + pluginName);
+        File file = new File(plugin.getDataFolder(), "js-plugins/" + pluginName + ".js");
+        if (!file.isFile() || Files.isSymbolicLink(file.toPath())) throw new IOException("Plugin file not found");
+        de.flori.mCJS.dashboard.PluginWorkspace.validate(Files.readString(file.toPath()));
+        unloadPlugin(pluginName);
+        loadPlugin(file);
+    }
+
+    public void reloadPlugin(String pluginName) {
+        try {
+            activatePlugin(pluginName);
+        } catch (Exception error) {
+            plugin.getLogger().severe("Failed to reload plugin " + pluginName + ": " + error.getMessage());
         }
-        
-        // Check disabled-plugins list
+    }
+
+    public boolean isPluginDisabled(String pluginName) {
+
+        if (pluginName.equalsIgnoreCase("example") && !isExamplePluginEnabled()) {
+            return true;
+        }
+
         java.util.List<String> disabledPlugins = plugin.getConfig().getStringList("plugins.disabled-plugins");
         if (disabledPlugins != null) {
             for (String disabled : disabledPlugins) {
@@ -391,32 +305,25 @@ public class JSPluginManager {
                 }
             }
         }
-        
+
         return false;
     }
-    
-    /**
-     * Check if example plugin is enabled in config
-     */
+
     private boolean isExamplePluginEnabled() {
         return plugin.getConfig().getBoolean("settings.enable-example-plugin", true);
     }
-    
-    /**
-     * Sort plugins by load-order from config
-     */
+
     private java.util.List<File> sortPluginsByLoadOrder(File[] pluginFiles) {
         java.util.List<String> loadOrder = plugin.getConfig().getStringList("plugins.load-order");
-        
+
         if (loadOrder == null || loadOrder.isEmpty()) {
-            // No load order specified, return as-is
+
             return java.util.Arrays.asList(pluginFiles);
         }
-        
+
         java.util.List<File> sorted = new java.util.ArrayList<>();
         java.util.List<File> remaining = new java.util.ArrayList<>(java.util.Arrays.asList(pluginFiles));
-        
-        // First, add plugins in the specified order
+
         for (String orderedName : loadOrder) {
             for (File file : remaining) {
                 String fileName = file.getName().replace(".js", "");
@@ -427,14 +334,13 @@ public class JSPluginManager {
                 }
             }
         }
-        
-        // Then add remaining plugins
+
         sorted.addAll(remaining);
-        
+
         debug("Plugin load order: " + sorted.stream()
             .map(f -> f.getName().replace(".js", ""))
             .collect(java.util.stream.Collectors.joining(", ")));
-        
+
         return sorted;
     }
 

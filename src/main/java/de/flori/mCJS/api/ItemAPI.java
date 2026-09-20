@@ -12,16 +12,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * API module for item and enchantment management
- */
 public class ItemAPI extends BaseAPI {
-    
+
     public ItemAPI(JavaPlugin plugin) {
         super(plugin);
     }
-    
-    // ===== ITEM CREATION METHODS =====
+
     public ItemStack createItemStack(Material material, int amount) {
         return new ItemStack(material, amount);
     }
@@ -59,8 +55,7 @@ public class ItemAPI extends BaseAPI {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             List<Component> componentLore = new ArrayList<>();
-            
-            // Handle both List and JavaScript arrays
+
             if (lore instanceof java.util.List) {
                 @SuppressWarnings("unchecked")
                 java.util.List<Object> loreList = (java.util.List<Object>) lore;
@@ -70,7 +65,7 @@ public class ItemAPI extends BaseAPI {
                     }
                 }
             } else if (lore instanceof org.mozilla.javascript.Scriptable) {
-                // Handle JavaScript arrays
+
                 org.mozilla.javascript.Scriptable array = (org.mozilla.javascript.Scriptable) lore;
                 Object length = array.get("length", array);
                 if (length instanceof Number) {
@@ -83,37 +78,35 @@ public class ItemAPI extends BaseAPI {
                     }
                 }
             }
-            
+
             meta.lore(componentLore);
             item.setItemMeta(meta);
         }
         return item;
     }
-    
-    // ===== ENCHANTMENT METHODS =====
-    // Helper method to get enchantment by name using registry
+
     private org.bukkit.enchantments.Enchantment getEnchantment(String enchantmentName) {
         if (enchantmentName == null) {
             return null;
         }
         try {
-            // Try registry lookup first (new API)
+
             String normalized = enchantmentName.toLowerCase().replace("_", "");
             NamespacedKey key = NamespacedKey.minecraft(normalized);
-            // Use Registry.ENCHANTMENTS instead of Registry.ENCHANTMENT
+
             @SuppressWarnings("deprecation")
             org.bukkit.enchantments.Enchantment enchantment = org.bukkit.enchantments.Enchantment.getByKey(key);
             if (enchantment != null) {
                 return enchantment;
             }
-            // Fallback to old API for backwards compatibility
+
             @SuppressWarnings("deprecation")
             org.bukkit.enchantments.Enchantment fallback = org.bukkit.enchantments.Enchantment.getByKey(key);
             if (fallback != null) {
                 return fallback;
             }
         } catch (Exception e) {
-            // Try old API as fallback
+
             try {
                 @SuppressWarnings("deprecation")
                 org.bukkit.enchantments.Enchantment oldApi = org.bukkit.enchantments.Enchantment.getByName(enchantmentName.toUpperCase());
@@ -124,7 +117,7 @@ public class ItemAPI extends BaseAPI {
         }
         return null;
     }
-    
+
     public void addEnchantment(ItemStack item, String enchantmentName, int level) {
         if (item == null || enchantmentName == null) {
             return;
@@ -140,7 +133,7 @@ public class ItemAPI extends BaseAPI {
             plugin.getLogger().warning("Error adding enchantment '" + enchantmentName + "': " + e.getMessage());
         }
     }
-    
+
     public void removeEnchantment(ItemStack item, String enchantmentName) {
         if (item == null || enchantmentName == null) {
             return;
@@ -154,7 +147,7 @@ public class ItemAPI extends BaseAPI {
             plugin.getLogger().warning("Error removing enchantment '" + enchantmentName + "': " + e.getMessage());
         }
     }
-    
+
     public boolean hasEnchantment(ItemStack item, String enchantmentName) {
         if (item == null || enchantmentName == null) {
             return false;
@@ -166,7 +159,7 @@ public class ItemAPI extends BaseAPI {
             return false;
         }
     }
-    
+
     public int getEnchantmentLevel(ItemStack item, String enchantmentName) {
         if (item == null || enchantmentName == null) {
             return 0;
@@ -178,7 +171,7 @@ public class ItemAPI extends BaseAPI {
             return 0;
         }
     }
-    
+
     public Map<String, Integer> getEnchantments(ItemStack item) {
         Map<String, Integer> enchantments = new HashMap<>();
         if (item == null) {
@@ -186,7 +179,7 @@ public class ItemAPI extends BaseAPI {
         }
         try {
             for (Map.Entry<org.bukkit.enchantments.Enchantment, Integer> entry : item.getEnchantments().entrySet()) {
-                // Use getKey() method instead of getName()
+
                 NamespacedKey key = entry.getKey().getKey();
                 enchantments.put(key.toString(), entry.getValue());
             }

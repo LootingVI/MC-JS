@@ -4,16 +4,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.net.URI;
 
-/**
- * API module for network operations (HTTP requests)
- */
 public class NetworkAPI extends BaseAPI {
-    
+
     public NetworkAPI(JavaPlugin plugin) {
         super(plugin);
     }
-    
-    // ===== HTTP REQUESTS =====
+
     public String httpGet(String url) {
         try {
             URI uri = new URI(url);

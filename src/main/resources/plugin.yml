@@ -1,12 +1,17 @@
 name: MC-JS
 version: '${project.version}'
 main: de.flori.mCJS.MCJS
-api-version: '1.21'
+api-version: '26.1'
 author: Flori
 load: STARTUP
+softdepend: [Vault]
 description: Modern JavaScript plugin system for Minecraft using Rhino Engine
 website: https://github.com/LootingVI/MC-JS
 commands:
+  mjs:
+    description: Open and verify the MC-JS plugin editor
+    usage: /<command> dashboard [verify-code]
+    permission: mcjs.dashboard
   jsreload:
     description: Reload JS plugins (all or specific)
     usage: /<command> [plugin]
@@ -25,6 +30,11 @@ commands:
 permissions:
   mcjs.admin:
     description: Allows managing JS plugins
+    default: op
+    children:
+      mcjs.dashboard: true
+  mcjs.dashboard:
+    description: Edit and execute JavaScript plugins through the dashboard (full server code access)
     default: op
   mcjs.use:
     description: Allows using JS plugin features

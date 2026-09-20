@@ -38,5 +38,5 @@ Add any other context about the problem here.
 
 ## Plugin Code (if applicable)
 ```javascript
-// Paste your plugin code here if it's relevant to the bug
+
 ```

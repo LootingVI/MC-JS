@@ -1,57 +1,39 @@
-# MC-JS Plugin Configuration
-
-# General Settings
 settings:
-  # Enable or disable the example plugin
-  # Set to false to disable the example.js plugin
-  enable-example-plugin: true
-  
-  # Enable debug logging for JS plugins
-  debug-mode: false
-  
 
-# Plugin Management
+  enable-example-plugin: true
+
+  debug-mode: false
+
+dashboard:
+  enabled: true
+  bind: "127.0.0.1"
+  port: 8765
+  public-url: "http://localhost:8765"
+  verify-timeout-seconds: 300
+  session-minutes: 30
+
 plugins:
-  # List of plugins to disable (by filename without .js extension)
-  # Example: disabled-plugins: [example, another-plugin]
+
   disabled-plugins: []
-  
-  # List of plugins to always load first (in order)
-  # Example: load-order: [core-plugin, api-plugin]
+
   load-order: []
 
-# Performance Settings
 performance:
-  # Rhino optimization level (-1 = disabled, 0-9 = optimization levels)
-  # -1 is recommended for better compatibility
+
   optimization-level: -1
-  
-  # Maximum execution time for JS callbacks in milliseconds
-  # Set to 0 to disable timeout
+
   max-execution-time: 5000
 
-# Security Settings
 security:
-  # Enable file system access restrictions
-  restrict-file-access: false
-  
-  # Allowed file paths (if restrict-file-access is true)
-  allowed-paths:
-    - "plugins/MC-JS/js-plugins/"
-    - "plugins/MC-JS/data/"
 
-# Plugin Browser Settings
+  restrict-file-access: false
+
+  allowed-paths:
+    - "plugins/MC-JS/"
+
 plugin-browser:
-  # URL of the central plugin browser server
-  # This is a shared server for all MC-JS users
-  # Default: Official MC-JS Plugin Browser (if available)
+
   url: "https://browser.flori.tv"
-  
-  # Enable plugin browser features
+
   enabled: true
-  
-  # Note: Use /pluginbrowser command in-game to browse and install plugins
-  # The plugin-browser.js plugin must be loaded for in-game features
-  # 
-  # The plugin browser is shared - all users can upload and download plugins
-  # Plugins are reviewed before being published for security
+

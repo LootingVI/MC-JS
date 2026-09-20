@@ -5,49 +5,48 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 
-/**
- * API module for command registration and management
- */
+import java.lang.reflect.Field;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class CommandAPI extends BaseAPI {
     private final APIHelper apiHelper;
-    
+    private final Set<Command> dynamicCommands = ConcurrentHashMap.newKeySet();
+
     public CommandAPI(JavaPlugin plugin, APIHelper apiHelper) {
         super(plugin);
         this.apiHelper = apiHelper;
     }
-    
+
     public void registerCommand(String name, String description, String usage, Object executor) {
         debug("Registering command: " + name + " (with description and usage)");
         registerCommand(name, description, usage, executor, null);
     }
-    
+
     public void registerCommand(String name, Object executor) {
         debug("Registering simple command: " + name);
         registerCommand(name, "", "/" + name, executor, null);
     }
-    
+
     public void registerCommand(String name, String description, String usage, Object executor, Object tabCompleter) {
         registerCommandInternal(name, description, usage, executor);
-        
-        // Set tab completer if provided
+
         if (tabCompleter != null) {
             try {
                 PluginCommand command = plugin.getCommand(name);
                 if (command == null) {
-                    // Try to get from CommandMap
+
                     try {
-                        java.lang.reflect.Field commandMapField = plugin.getServer().getClass().getDeclaredField("commandMap");
-                        commandMapField.setAccessible(true);
-                        CommandMap commandMap = (CommandMap) commandMapField.get(plugin.getServer());
+                        CommandMap commandMap = getCommandMap();
                         Command cmd = commandMap.getCommand(name);
                         if (cmd instanceof PluginCommand) {
                             command = (PluginCommand) cmd;
                         }
                     } catch (Exception e) {
-                        // Ignore
+
                     }
                 }
-                
+
                 if (command != null && tabCompleter instanceof Function) {
                     command.setTabCompleter((sender, cmd, alias, args) -> {
                         try {
@@ -58,7 +57,7 @@ public class CommandAPI extends BaseAPI {
                                 Function func = (Function) tabCompleter;
                                 Scriptable scope = apiHelper.getScope();
                                 Object result = func.call(rhinoContext, scope, scope, new Object[]{sender, args});
-                                
+
                                 if (result instanceof java.util.List) {
                                     @SuppressWarnings("unchecked")
                                     java.util.List<String> list = (java.util.List<String>) result;
@@ -94,21 +93,17 @@ public class CommandAPI extends BaseAPI {
             }
         }
     }
-    
+
     private void registerCommandInternal(String name, String description, String usage, Object executor) {
         try {
-            // Try to get existing command first
+
             PluginCommand command = plugin.getCommand(name);
-            
-            // If command doesn't exist in plugin.yml, register it dynamically
+
             if (command == null) {
-                // Use reflection to access CommandMap and register command dynamically
+
                 try {
-                    java.lang.reflect.Field commandMapField = plugin.getServer().getClass().getDeclaredField("commandMap");
-                    commandMapField.setAccessible(true);
-                    CommandMap commandMap = (CommandMap) commandMapField.get(plugin.getServer());
-                    
-                    // Create a simple Command object
+                    CommandMap commandMap = getCommandMap();
+
                     Command dynamicCommand = new Command(name) {
                         @Override
                         public boolean execute(CommandSender sender, String commandLabel, String[] args) {
@@ -120,10 +115,10 @@ public class CommandAPI extends BaseAPI {
                                         rhinoContext.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
                                         Function func = (Function) executor;
                                         Scriptable scope = apiHelper.getScope();
-                                        // Convert String[] to JavaScript array
+
                                         Scriptable jsArgs = rhinoContext.newArray(scope, args.length);
                                         for (int i = 0; i < args.length; i++) {
-                                            // Ensure we pass a proper String, not ConsString
+
                                             jsArgs.put(i, jsArgs, args[i] != null ? args[i].toString() : "");
                                         }
                                         Object result = func.call(rhinoContext, scope, scope, new Object[]{sender, jsArgs});
@@ -140,12 +135,12 @@ public class CommandAPI extends BaseAPI {
                             }
                         }
                     };
-                    
+
                     dynamicCommand.setDescription(description != null ? description : "");
                     dynamicCommand.setUsage(usage != null ? usage : "/" + name);
-                    
-                    // Register the command
+
                     commandMap.register(name, plugin.getName().toLowerCase(), dynamicCommand);
+                    dynamicCommands.add(dynamicCommand);
                     plugin.getLogger().info("Dynamically registered command: /" + name);
                     return;
                 } catch (Exception e) {
@@ -154,8 +149,7 @@ public class CommandAPI extends BaseAPI {
                     return;
                 }
             }
-            
-            // Set executor for existing command
+
             command.setExecutor((sender, cmd, label, args) -> {
                 try {
                     if (executor instanceof Function && apiHelper.getScope() != null) {
@@ -165,10 +159,10 @@ public class CommandAPI extends BaseAPI {
                             rhinoContext.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
                             Function func = (Function) executor;
                             Scriptable scope = apiHelper.getScope();
-                            // Convert String[] to JavaScript array
+
                             Scriptable jsArgs = rhinoContext.newArray(scope, args.length);
                             for (int i = 0; i < args.length; i++) {
-                                // Ensure we pass a proper String, not ConsString
+
                                 jsArgs.put(i, jsArgs, args[i] != null ? args[i].toString() : "");
                             }
                             Object result = func.call(rhinoContext, scope, scope, new Object[]{sender, jsArgs});
@@ -184,18 +178,47 @@ public class CommandAPI extends BaseAPI {
                     return false;
                 }
             });
-            
+
             if (description != null && !description.isEmpty()) {
                 command.setDescription(description);
             }
             if (usage != null && !usage.isEmpty()) {
                 command.setUsage(usage);
             }
-            
+
             plugin.getLogger().info("Registered JS command: /" + name);
         } catch (Exception e) {
             plugin.getLogger().severe("Failed to register command '" + name + "': " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    public void unregisterCommands() {
+        if (dynamicCommands.isEmpty()) return;
+        try {
+            CommandMap commandMap = getCommandMap();
+            for (Command command : dynamicCommands) {
+                command.unregister(commandMap);
+                commandMap.getKnownCommands().values().removeIf(registered -> registered == command);
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to unregister JS commands: " + e.getMessage());
+        } finally {
+            dynamicCommands.clear();
+        }
+    }
+
+    private CommandMap getCommandMap() throws ReflectiveOperationException {
+        Class<?> serverClass = plugin.getServer().getClass();
+        while (serverClass != null) {
+            try {
+                Field commandMapField = serverClass.getDeclaredField("commandMap");
+                commandMapField.setAccessible(true);
+                return (CommandMap) commandMapField.get(plugin.getServer());
+            } catch (NoSuchFieldException ignored) {
+                serverClass = serverClass.getSuperclass();
+            }
+        }
+        throw new NoSuchFieldException("commandMap");
     }
 }

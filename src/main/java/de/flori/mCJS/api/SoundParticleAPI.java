@@ -8,20 +8,15 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/**
- * API module for sound and particle effects
- */
 public class SoundParticleAPI extends BaseAPI {
-    
+
     public SoundParticleAPI(JavaPlugin plugin) {
         super(plugin);
     }
-    
-    // ===== SOUND METHODS =====
-    // Helper method to convert string to Sound enum
+
     private Sound getSound(String soundName) {
         try {
-            // Try using NamespacedKey first (new API)
+
             String normalized = soundName.toLowerCase().replace("_", ":");
             NamespacedKey key = NamespacedKey.fromString(normalized);
             if (key != null) {
@@ -30,7 +25,7 @@ public class SoundParticleAPI extends BaseAPI {
                     return sound;
                 }
             }
-            // Try minecraft: namespace
+
             try {
                 NamespacedKey minecraftKey = NamespacedKey.minecraft(soundName.toLowerCase().replace("_", ""));
                 Sound sound = Registry.SOUNDS.get(minecraftKey);
@@ -38,9 +33,9 @@ public class SoundParticleAPI extends BaseAPI {
                     return sound;
                 }
             } catch (Exception ex) {
-                // Ignore
+
             }
-            // Fallback to valueOf for backwards compatibility (deprecated but still works)
+
             @SuppressWarnings("deprecation")
             Sound fallback = Sound.valueOf(soundName.toUpperCase());
             return fallback;
@@ -50,7 +45,6 @@ public class SoundParticleAPI extends BaseAPI {
         }
     }
 
-    // Overloads that accept Sound enum
     public void playSound(Location location, Sound sound, float volume, float pitch) {
         location.getWorld().playSound(location, sound, volume, pitch);
     }
@@ -59,7 +53,6 @@ public class SoundParticleAPI extends BaseAPI {
         player.playSound(player.getLocation(), sound, volume, pitch);
     }
 
-    // Overloads that accept String (for JavaScript compatibility)
     public void playSound(Location location, Object soundName, float volume, float pitch) {
         if (soundName == null) return;
         playSound(location, getSound(soundName.toString()), volume, pitch);
@@ -70,8 +63,6 @@ public class SoundParticleAPI extends BaseAPI {
         playSound(player, getSound(soundName.toString()), volume, pitch);
     }
 
-    // ===== PARTICLE METHODS =====
-    // Helper method to convert string to Particle enum
     private Particle getParticle(String particleName) {
         try {
             return Particle.valueOf(particleName.toUpperCase());
@@ -80,13 +71,12 @@ public class SoundParticleAPI extends BaseAPI {
             try {
                 return Particle.FLAME;
             } catch (Exception ex) {
-                // Fallback to first available particle
+
                 return Particle.values()[0];
             }
         }
     }
 
-    // Overloads that accept Particle enum
     public void spawnParticle(Location location, Particle particle, int count) {
         location.getWorld().spawnParticle(particle, location, count);
     }
@@ -99,7 +89,6 @@ public class SoundParticleAPI extends BaseAPI {
         location.getWorld().spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, extra);
     }
 
-    // Overloads that accept String (for JavaScript compatibility)
     public void spawnParticle(Location location, Object particleName, int count) {
         if (particleName == null) return;
         spawnParticle(location, getParticle(particleName.toString()), count);

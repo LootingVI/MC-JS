@@ -3,142 +3,117 @@ package de.flori.mCJS.api;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import org.mozilla.javascript.Function;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * API module for task scheduling (sync and async)
- */
 public class SchedulerAPI extends BaseAPI {
     private final APIHelper apiHelper;
-    
+    private final Set<OwnedTask> tasks = ConcurrentHashMap.newKeySet();
+    private volatile boolean closed;
+
     public SchedulerAPI(JavaPlugin plugin, APIHelper apiHelper) {
         super(plugin);
         this.apiHelper = apiHelper;
     }
-    
+
     public BukkitTask runTaskLater(long delay, Object task) {
-        return plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            try {
-                if (task instanceof Function && apiHelper.getScope() != null) {
-                    apiHelper.executeFunction((Function) task);
-                }
-            } catch (Exception e) {
-                plugin.getLogger().severe("Error in scheduled task: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }, delay);
+        return schedule(task, null, false, runnable -> plugin.getServer().getScheduler().runTaskLater(plugin, runnable, delay));
     }
-    
+
     public BukkitTask runTaskTimer(long delay, long period, Object task) {
-        return plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
-            try {
-                if (task instanceof Function && apiHelper.getScope() != null) {
-                    apiHelper.executeFunction((Function) task);
-                }
-            } catch (Exception e) {
-                plugin.getLogger().severe("Error in scheduled task: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }, delay, period);
+        return schedule(task, null, true, runnable -> plugin.getServer().getScheduler().runTaskTimer(plugin, runnable, delay, period));
     }
-    
+
     public BukkitTask runTask(Object task) {
-        return plugin.getServer().getScheduler().runTask(plugin, () -> {
-            try {
-                if (task instanceof Function && apiHelper.getScope() != null) {
-                    apiHelper.executeFunction((Function) task);
-                }
-            } catch (Exception e) {
-                plugin.getLogger().severe("Error in task: " + e.getMessage());
-                e.printStackTrace();
-            }
-        });
+        return schedule(task, null, false, runnable -> plugin.getServer().getScheduler().runTask(plugin, runnable));
     }
-    
+
+    public BukkitTask runOwnedTask(Runnable task) {
+        return schedule(task, null, false, runnable -> plugin.getServer().getScheduler().runTask(plugin, runnable));
+    }
+
+    public BukkitTask runOwnedTaskLater(long delay, Runnable task) {
+        return schedule(task, null, false, runnable -> plugin.getServer().getScheduler().runTaskLater(plugin, runnable, delay));
+    }
+
     public BukkitTask runTaskAsync(Object task) {
-        return plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                if (task instanceof Function && apiHelper.getScope() != null) {
-                    apiHelper.executeFunction((Function) task);
-                }
-            } catch (Exception e) {
-                plugin.getLogger().severe("Error in async task: " + e.getMessage());
-                e.printStackTrace();
-            }
-        });
+        return schedule(task, null, false, runnable -> plugin.getServer().getScheduler().runTaskAsynchronously(plugin, runnable));
     }
-    
+
     public BukkitTask runTaskLaterAsync(long delay, Object task) {
-        return plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> {
-            try {
-                if (task instanceof Function && apiHelper.getScope() != null) {
-                    apiHelper.executeFunction((Function) task);
-                }
-            } catch (Exception e) {
-                plugin.getLogger().severe("Error in async scheduled task: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }, delay);
+        return schedule(task, null, false, runnable -> plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, runnable, delay));
     }
-    
+
+    public BukkitTask runTaskSafe(Object task, Object onError) {
+        return schedule(task, onError, false, runnable -> plugin.getServer().getScheduler().runTask(plugin, runnable));
+    }
+
+    public BukkitTask runTaskAsyncSafe(Object task, Object onError) {
+        return schedule(task, onError, false, runnable -> plugin.getServer().getScheduler().runTaskAsynchronously(plugin, runnable));
+    }
+
+    private BukkitTask schedule(Object callback, Object onError, boolean repeat,
+                                java.util.function.Function<Runnable, BukkitTask> register) {
+        if (closed) throw new IllegalStateException("This plugin has been stopped");
+        OwnedTask owned = new OwnedTask(callback, onError, repeat);
+        tasks.add(owned);
+        try {
+            BukkitTask handle = register.apply(owned);
+            owned.handle = handle;
+            if (closed) {
+                handle.cancel();
+                tasks.remove(owned);
+            }
+            return handle;
+        } catch (RuntimeException error) {
+            tasks.remove(owned);
+            throw error;
+        }
+    }
+
     public void cancelTask(BukkitTask task) {
         if (task != null) {
             task.cancel();
+            tasks.removeIf(owned -> owned.handle == task);
         }
     }
-    
-    public BukkitTask runTaskSafe(Object task, Object onError) {
-        return plugin.getServer().getScheduler().runTask(plugin, () -> {
-            try {
-                if (task instanceof Function && apiHelper.getScope() != null) {
-                    apiHelper.executeFunction((Function) task);
-                }
-            } catch (Exception e) {
-                plugin.getLogger().severe("Error in task: " + e.getMessage());
-                if (onError instanceof Function && apiHelper.getScope() != null) {
-                    try {
-                        org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
-                        try {
-                            cx.setOptimizationLevel(-1);
-                            cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
-                            ((Function) onError).call(cx, apiHelper.getScope(), apiHelper.getScope(), new Object[]{e.getMessage()});
-                        } finally {
-                            org.mozilla.javascript.Context.exit();
-                        }
-                    } catch (Exception errorHandlerException) {
-                        plugin.getLogger().severe("Error in error handler: " + errorHandlerException.getMessage());
-                    }
-                } else {
-                    e.printStackTrace();
-                }
-            }
-        });
+
+    public void cancelAll() {
+        closed = true;
+        for (OwnedTask task : tasks) {
+            if (task.handle != null) task.handle.cancel();
+        }
+        tasks.clear();
     }
-    
-    public BukkitTask runTaskAsyncSafe(Object task, Object onError) {
-        return plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+
+    private final class OwnedTask implements Runnable {
+        final Object callback;
+        final Object onError;
+        final boolean repeat;
+        volatile BukkitTask handle;
+
+        OwnedTask(Object callback, Object onError, boolean repeat) {
+            this.callback = callback;
+            this.onError = onError;
+            this.repeat = repeat;
+        }
+
+        public void run() {
             try {
-                if (task instanceof Function && apiHelper.getScope() != null) {
-                    apiHelper.executeFunction((Function) task);
-                }
-            } catch (Exception e) {
-                plugin.getLogger().severe("Error in async task: " + e.getMessage());
-                if (onError instanceof Function && apiHelper.getScope() != null) {
+                if (!closed && callback instanceof Function function) apiHelper.executeFunction(function);
+                else if (!closed && callback instanceof Runnable runnable) runnable.run();
+            } catch (Exception error) {
+                plugin.getLogger().severe("Error in scheduled task: " + error.getMessage());
+                if (!closed && onError instanceof Function handler) {
                     try {
-                        org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
-                        try {
-                            cx.setOptimizationLevel(-1);
-                            cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
-                            ((Function) onError).call(cx, apiHelper.getScope(), apiHelper.getScope(), new Object[]{e.getMessage()});
-                        } finally {
-                            org.mozilla.javascript.Context.exit();
-                        }
-                    } catch (Exception errorHandlerException) {
-                        plugin.getLogger().severe("Error in error handler: " + errorHandlerException.getMessage());
+                        apiHelper.executeFunction(handler, error.getMessage());
+                    } catch (Exception handlerError) {
+                        plugin.getLogger().severe("Error in error handler: " + handlerError.getMessage());
                     }
-                } else {
-                    e.printStackTrace();
                 }
+            } finally {
+                if (!repeat) tasks.remove(this);
             }
-        });
+        }
     }
 }

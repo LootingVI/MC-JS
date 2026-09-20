@@ -8,15 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * API module for SQLite database operations
- */
 public class DatabaseAPI extends BaseAPI {
-    
+
     public DatabaseAPI(JavaPlugin plugin) {
         super(plugin);
     }
-    
+
     private java.sql.Connection getDatabaseConnection(String dbName) throws java.sql.SQLException {
         File dbFile = new File(plugin.getDataFolder(), dbName + ".db");
         return java.sql.DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath());
@@ -97,15 +94,13 @@ public class DatabaseAPI extends BaseAPI {
                 stmt.setObject(i + 1, params.get(i));
             }
             stmt.executeUpdate();
-            
-            // Get the generated ID
+
             try (java.sql.ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     return generatedKeys.getLong(1);
                 }
             }
-            
-            // Fallback: use last_insert_rowid()
+
             try (java.sql.Statement stmt2 = conn.createStatement();
                  java.sql.ResultSet rs = stmt2.executeQuery("SELECT last_insert_rowid()")) {
                 if (rs.next()) {
@@ -118,12 +113,11 @@ public class DatabaseAPI extends BaseAPI {
         }
         return -1;
     }
-    
-    // ===== EXTENDED DATABASE OPERATIONS =====
+
     public void updateData(String dbName, String tableName, Map<String, Object> data, String whereClause) {
         StringBuilder setClause = new StringBuilder();
         List<Object> params = new ArrayList<>();
-        
+
         boolean first = true;
         for (Map.Entry<String, Object> entry : data.entrySet()) {
             if (!first) setClause.append(", ");
@@ -131,12 +125,12 @@ public class DatabaseAPI extends BaseAPI {
             params.add(entry.getValue());
             first = false;
         }
-        
+
         String sql = "UPDATE " + tableName + " SET " + setClause + " WHERE " + whereClause;
-        
+
         try (java.sql.Connection conn = getDatabaseConnection(dbName);
              java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             for (int i = 0; i < params.size(); i++) {
                 stmt.setObject(i + 1, params.get(i));
             }
@@ -161,7 +155,7 @@ public class DatabaseAPI extends BaseAPI {
         if (whereClause != null && !whereClause.isEmpty()) {
             sql += " WHERE " + whereClause;
         }
-        
+
         List<Map<String, Object>> results = querySQL(dbName, sql);
         if (!results.isEmpty()) {
             Object count = results.get(0).get("COUNT(*)");
